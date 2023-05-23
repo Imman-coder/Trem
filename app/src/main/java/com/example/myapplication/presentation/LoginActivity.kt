@@ -58,6 +58,9 @@ class LoginActivity : ComponentActivity() {
                     Modifier.fillMaxSize(),
                     color = Color.Black
                 ) {
+                    val showLoginScreen = remember {
+                        mutableStateOf(false)
+                    }
                     if(isOnline(this@LoginActivity)){
                         Main()
                     }
@@ -75,13 +78,13 @@ class LoginActivity : ComponentActivity() {
 
     @Composable
     private fun Main() {
-        val creds = credentialsStore.data.collectAsState(initial = Credentials()).value
+        val creds = credentialsStore.data.collectAsState(initial = Credentials(uid = "nothing")).value
         val loginStatus = remember {
             mutableStateOf(true)
         }
         LaunchedEffect(key1 = creds) {
-            if (!(creds.uid.isEmpty() || creds.pass.isEmpty()))
-                loginStatus.value = creds.hasCredentials
+                if (creds.uid!="nothing")
+                    loginStatus.value = creds.hasCredentials
         }
         if (loginStatus.value) {
             SplashScreen()

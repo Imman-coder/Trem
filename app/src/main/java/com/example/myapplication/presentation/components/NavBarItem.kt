@@ -1,4 +1,4 @@
-package com.example.myapplication.presentation.navigation.main
+package com.example.myapplication.presentation.components
 
 import android.graphics.drawable.Drawable
 import androidx.compose.ui.graphics.vector.ImageVector

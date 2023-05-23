@@ -45,9 +45,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.domain.model.Result
-import com.example.myapplication.presentation.navigation.main.Dashboard
 import com.example.myapplication.presentation.navigation.main.HomeScreen
-import com.example.myapplication.presentation.navigation.main.NavBarItem
+import com.example.myapplication.presentation.components.NavBarItem
 import com.example.myapplication.presentation.navigation.main.ProfileScreen
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import com.example.myapplication.repository.ProfileRepository

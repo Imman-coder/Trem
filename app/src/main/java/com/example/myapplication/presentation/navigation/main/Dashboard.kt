@@ -85,6 +85,7 @@ fun HomeScreen(profileStore: DataStore<Profile>) {
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.headlineLarge,
         )
+//        WelcomeCard()
         AttendanceListView(profile)
 
     }
@@ -138,9 +139,10 @@ private fun AttendanceCard(s: AttendanceSubject) {
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
+        var progress =(s.present / s.conducted.toFloat())
+        if (progress.isNaN()) progress = 0f
         CircularProgressbar3(
-            progress = s.present / (s.present + s.absent).toFloat(),
+            progress = progress,
             foregroundIndicatorColor = MaterialTheme.colorScheme.primaryContainer,
             numberStyle = MaterialTheme.typography.labelSmall,
             size = 60.dp,
@@ -194,7 +196,7 @@ fun getInitials(name: String): String {
 
 @Composable
 fun CircularProgressbar3(
-    progress: Float = .70f,
+    progress: Float = .0f,
     numberStyle: TextStyle = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
@@ -202,21 +204,8 @@ fun CircularProgressbar3(
     ),
     size: Dp = 60.dp,
     indicatorThickness: Dp = 8.dp,
-    animationDuration: Int = 1000,
-    animationDelay: Int = 0,
     foregroundIndicatorColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    backgroundIndicatorColor: Color = Color.LightGray.copy(alpha = 0.0f)
 ) {
-
-
-    // Number Animation
-    val animateNumber = animateFloatAsState(
-        targetValue = progress * 100,
-        animationSpec = tween(
-            durationMillis = animationDuration,
-            delayMillis = animationDelay
-        )
-    )
 
 
     Box(
@@ -229,16 +218,8 @@ fun CircularProgressbar3(
                 .size(size = size)
         ) {
 
-            // Background circle
-            drawCircle(
-                color = backgroundIndicatorColor,
-                radius = size.toPx() / 2,
-                style = Stroke(width = indicatorThickness.toPx(), cap = StrokeCap.Round)
-            )
+            val sweepAngle = progress * 360
 
-            val sweepAngle = (animateNumber.value / 100) * 360
-
-            // Foreground circle
             drawArc(
                 color = foregroundIndicatorColor,
                 startAngle = -90f,
@@ -248,7 +229,6 @@ fun CircularProgressbar3(
             )
         }
 
-        // Text that shows number inside the circle
         Text(
             text = "${(progress * 100).toInt()}%",
             color = MaterialTheme.colorScheme.onPrimary,
