@@ -11,6 +11,7 @@ import com.example.myapplication.domain.model.Serializers.ProfileSerializer
 import com.example.myapplication.network.util.AttendenceDtoMapper
 import com.example.myapplication.network.util.ProfileDtoMapper
 import com.example.myapplication.network.util.ResultDtoMapper
+import com.example.myapplication.network.util.TimetableDtoMapper
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,12 +19,15 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-val Context.profileStore by dataStore("profile.json", ProfileSerializer)
-val Context.credentialsStore by dataStore("credentials.json", CredentialsSerializer)
+//val Context.profileStore by dataStore("profile.json", ProfileSerializer)
+//val Context.credentialsStore by dataStore("credentials.json", CredentialsSerializer)
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule{
+
+    private val Context.profileStore :DataStore<Profile> by dataStore("profile.json", ProfileSerializer)
+    private val Context.credentialsStore: DataStore<Credentials> by dataStore("credentials.json", CredentialsSerializer)
 
 
     @Singleton
@@ -53,6 +57,12 @@ object AppModule{
 
     @Singleton
     @Provides
+    fun provideTimetableMapper(): TimetableDtoMapper {
+        return TimetableDtoMapper()
+    }
+
+    @Singleton
+    @Provides
     fun provideProfileStore(@ApplicationContext context: Context):DataStore<Profile> {
         return context.profileStore;
     }
@@ -62,6 +72,7 @@ object AppModule{
     fun provideCredentials(@ApplicationContext context: Context):DataStore<Credentials> {
         return context.credentialsStore;
     }
+
 
 
 }

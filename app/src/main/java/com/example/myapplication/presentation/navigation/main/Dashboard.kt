@@ -5,9 +5,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +21,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.core.DataStore
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import com.example.myapplication.domain.model.AttendanceSubject
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
@@ -55,11 +58,10 @@ import dagger.hilt.android.AndroidEntryPoint
 
 
 @AndroidEntryPoint
-class Dashboard
-    constructor(
-        private val profileStore: DataStore<Profile>
-    )
-    :Fragment(){
+class Dashboard : Fragment() {
+
+    val model: mainViewModel by viewModels()
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -67,7 +69,8 @@ class Dashboard
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                HomeScreen(profileStore = profileStore)
+                HomeScreen(profileStore = model.getLProfileStore())
+
             }
         }
     }
@@ -75,6 +78,7 @@ class Dashboard
 
 @Composable
 fun HomeScreen(profileStore: DataStore<Profile>) {
+
     val profile = profileStore.data.collectAsState(initial = Profile()).value
     LaunchedEffect(key1 = profile) {
         Log.d("TAG2", profile.attendance.toString())
@@ -109,22 +113,21 @@ private fun WelcomeCard() {
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AttendanceListView(profile: Profile) {
     Text(text = "Attendance", style = MaterialTheme.typography.headlineLarge)
-    LazyHorizontalGrid(
-        rows = GridCells.Fixed(2),
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+//        columns = StaggeredGridCells.Adaptive(120.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.height(200.dp)
+//        modifier = Modifier.height(200.dp)
     ) {
         items(profile.attendance.size) { i ->
             AttendanceCard(profile.attendance[i])
         }
-        item { Spacer(modifier = Modifier.padding(100.dp)) }
-
     }
-
 }
 
 @Composable
@@ -137,17 +140,20 @@ private fun AttendanceCard(s: AttendanceSubject) {
             .clip(RoundedCornerShape(15.dp))
             .background(MaterialTheme.colorScheme.primary)
             .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        var progress =(s.present / s.conducted.toFloat())
-        if (progress.isNaN()) progress = 0f
-        CircularProgressbar3(
-            progress = progress,
-            foregroundIndicatorColor = MaterialTheme.colorScheme.primaryContainer,
-            numberStyle = MaterialTheme.typography.labelSmall,
-            size = 60.dp,
-            indicatorThickness = 5.dp,
-        )
+        verticalAlignment = Alignment.CenterVertically,
+
+        ) {
+        var progress = (s.present / s.conducted.toFloat())
+        if (!progress.isNaN()) {
+            CircularProgressbar3(
+                progress = progress,
+                foregroundIndicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                backgroundIndicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .4f),
+                numberStyle = MaterialTheme.typography.labelSmall,
+                size = 60.dp,
+                indicatorThickness = 5.dp,
+            )
+        }
 
         Column(
             Modifier
@@ -169,6 +175,8 @@ private fun AttendanceCard(s: AttendanceSubject) {
                 )
         }
     }
+
+
 }
 
 @Preview
@@ -176,10 +184,31 @@ private fun AttendanceCard(s: AttendanceSubject) {
 private fun MainPreview() {
     MyApplicationTheme(darkTheme = true, dynamicColor = false) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-//            HomeScreen()
+
+            val profile = Profile(
+                name = "John Doe",
+                redgno = 101102341,
+                phoneno = 123,
+                sem = 3,
+                program = "BTech"
+            )
+            LaunchedEffect(key1 = profile) {
+                Log.d("TAG2", profile.attendance.toString())
+            }
+            Column(Modifier.padding(15.dp)) {
+                Text(
+                    text = "Hi ${profile.name}",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.headlineLarge,
+                )
+                AttendanceListView(profile)
+
+            }
+
         }
     }
 }
+
 fun getInitials(name: String): String {
     val words = name.split(" ")
     val initials = StringBuilder()
@@ -205,6 +234,7 @@ fun CircularProgressbar3(
     size: Dp = 60.dp,
     indicatorThickness: Dp = 8.dp,
     foregroundIndicatorColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    backgroundIndicatorColor: Color = MaterialTheme.colorScheme.primaryContainer,
 ) {
 
 
@@ -217,6 +247,13 @@ fun CircularProgressbar3(
             modifier = Modifier
                 .size(size = size)
         ) {
+            drawArc(
+                color = backgroundIndicatorColor,
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                style = Stroke(indicatorThickness.toPx(), cap = StrokeCap.Round)
+            )
 
             val sweepAngle = progress * 360
 

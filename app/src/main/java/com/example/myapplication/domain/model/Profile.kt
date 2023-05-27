@@ -11,5 +11,6 @@ data class Profile (
     val sem : Int = -1,
     val program : String = "",
     val attendance: List<AttendanceSubject> = listOf(),
-    val result: Result = Result()
+    val result: Result = Result(),
+    val timetable: Timetable = Timetable()
 )

@@ -9,7 +9,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,16 +19,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.datastore.core.DataStore
 import com.example.myapplication.domain.model.Credentials
-import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.presentation.navigation.login.LoginScreen
 import com.example.myapplication.presentation.navigation.login.SplashScreen
+import com.example.myapplication.presentation.navigation.main.mainViewModel
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
-import com.example.myapplication.repository.ProfileRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,43 +33,24 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
-import javax.inject.Inject
 
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
 
-    @Inject
-    lateinit var profileRepository: ProfileRepository
 
-    @Inject
-    lateinit var profileStore: DataStore<Profile>
-
-    @Inject
-    lateinit var credentialsStore: DataStore<Credentials>
+    private val model: mainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MyApplicationTheme(dynamicColor = false) {
+            MyApplicationTheme() {
                 Surface(
                     Modifier.fillMaxSize(),
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    val showLoginScreen = remember {
-                        mutableStateOf(false)
-                    }
-                    if(isOnline(this@LoginActivity)){
                         Main()
-                    }
-                    else{
-                        LaunchedEffect(key1 = Unit){
-                            val i = Intent(this@LoginActivity, MainActivity::class.java)
-                            startActivity(i)
-                            finish()
-                        }
-                    }
                 }
             }
         }
@@ -78,48 +58,42 @@ class LoginActivity : ComponentActivity() {
 
     @Composable
     private fun Main() {
-        val creds = credentialsStore.data.collectAsState(initial = Credentials(uid = "nothing")).value
+        val creds =
+            model.credentialStore.data.collectAsState(initial = Credentials(uid = "nothing")).value
+
         val loginStatus = remember {
             mutableStateOf(true)
         }
         LaunchedEffect(key1 = creds) {
-                if (creds.uid!="nothing")
-                    loginStatus.value = creds.hasCredentials
+//                            delay(8000)
+            if (creds.uid != "nothing") {
+                if (creds.hasCredentials) {
+                    val i = Intent(this@LoginActivity, MainActivity2::class.java)
+                    startActivity(i)
+                    finish()
+                } else {
+                    loginStatus.value = false
+                }
+            }
         }
         if (loginStatus.value) {
             SplashScreen()
-            if (!(creds.uid.isEmpty() || creds.pass.isEmpty())) {
-                LaunchedEffect(key1 = Unit) {
-                    CoroutineScope(IO).launch {
-                        try {
-                            setProfile(profileRepository.Login(creds.uid, creds.pass))
-                            val i = Intent(this@LoginActivity, MainActivity::class.java)
-                            startActivity(i)
-                            finish()
-                        } catch (e: LoginException) {
-                            if(e.toastMessage=="No Intenet")
-                                loginStatus.value = false
-                        }
-
-                    }
-                }
-            }
         } else {
             LoginScreen(onLoginClicked = { uid, pass, b ->
                 CoroutineScope(IO).launch {
                     try {
                         makeToast("Logging in..")
-                        setProfile(profileRepository.Login(uid, pass))
-                        if (b) setCredentials(uid, pass)
+                        model.updateProfile(uid, pass)
+                        if (b) model.setCredentials(uid, pass)
                         makeToast("Logged In")
-                        val i = Intent(this@LoginActivity, MainActivity::class.java)
+                        val i = Intent(this@LoginActivity, MainActivity2::class.java)
                         startActivity(i)
                         finish()
                     } catch (e: LoginException) {
                         makeToast(e.toastMessage)
                     }
                 }
-            }, credentialsStore)
+            }, model.credentialStore)
         }
     }
 
@@ -135,31 +109,9 @@ class LoginActivity : ComponentActivity() {
         Main()
     }
 
-    suspend fun setProfile(profile: Profile) {
-        profileStore.updateData {
-            it.copy(
-                name = profile.name,
-                redgno = profile.redgno,
-                phoneno = profile.phoneno,
-                sem = profile.sem,
-                program = profile.program,
-            )
-        }
-    }
-
-    suspend fun setCredentials(uid: String, pass: String) {
-        credentialsStore.updateData {
-            it.copy(
-                true, uid, pass
-            )
-        }
-    }
-
-
-
-
 
 }
+
 fun isInternetAvailable(): Boolean {
     return try {
         val ipAddr = InetAddress.getByName("www.google.com")

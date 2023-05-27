@@ -1,5 +1,9 @@
 package com.example.myapplication.presentation.navigation.main
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -39,11 +43,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.domain.model.ResultSubject
@@ -52,6 +60,21 @@ import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import kotlin.math.ceil
 
 
+class Profile :Fragment(){
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+    val model = ViewModelProvider(requireActivity())[mainViewModel::class.java]
+        return ComposeView(requireContext()).apply {
+            setContent {
+                ProfileScreen(profileStore = model.profileStore)
+            }
+        }
+    }
+}
 
 @Composable
 fun ProfileScreen(profileStore:DataStore<Profile>) {
@@ -93,7 +116,6 @@ private fun ResultSection(profile:Profile) {
                 }
                 Spacer(modifier = Modifier.padding(5.dp))
             }
-            Spacer(modifier = Modifier.padding(50.dp))
         }
 //    }
 }

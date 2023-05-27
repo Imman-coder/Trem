@@ -2,11 +2,13 @@ package com.example.myapplication.repository
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.network.model.AttendanceDto
 import com.example.myapplication.network.model.ProfileDto
 import com.example.myapplication.network.model.ResultDto
 import com.example.myapplication.network.model.ResultSubjectDto
 import com.example.myapplication.network.model.SemDto
+import com.example.myapplication.network.model.TimetableDto
 import com.example.myapplication.network.response.FetchType
 import com.example.myapplication.network.response.HashCarrier
 import com.example.myapplication.network.response.ProfileCarrier
@@ -14,6 +16,7 @@ import com.example.myapplication.network.response.UserSta
 import com.google.gson.Gson
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.parser.PdfTextExtractor
+import kotlinx.serialization.Serializable
 import okhttp3.ResponseBody
 import retrofit2.Converter
 import retrofit2.Retrofit
@@ -33,23 +36,35 @@ class ConverterFactory : Converter.Factory() {
         if (String::class.java == type) {
             return Converter<ResponseBody, String?> { r -> r.string() }
         } else if (HashCarrier::class.java == type) {
-            return ParseHash()
+            return parseHash()
         } else if (ProfileCarrier::class.java == type) {
-            return ParseProfile()
+            return parseProfile()
         } else if (UserSta::class.java == type) {
-            return ParseLoginStatus()
+            return parseLoginStatus()
         } else if (AttendanceDto::class.java == type) {
-            return ParseAttendence()
+            return parseAttendence()
         } else if (ResultDto::class.java == type) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                return ParseResult()
+                return parseResult()
             }
+        }else if(TimetableDto::class.java==type){
+            return parseTimetable()
         }
         return null
     }
 
+    private fun parseTimetable(): Converter<ResponseBody,TimetableDto>{
+        return Converter {
+            value:ResponseBody ->
+            val s = value.string()
+            val gson = Gson()
+            gson.fromJson(s, TimetableDto::class.java)
+
+        }
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private fun ParseResult(): Converter<ResponseBody, ResultDto> {
+    private fun parseResult(): Converter<ResponseBody, ResultDto> {
         return Converter { value: ResponseBody ->
 
             var r = ResultDto()
@@ -115,11 +130,18 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 
-    private fun ParseHash(): Converter<ResponseBody, HashCarrier> {
+    private fun parseHash(): Converter<ResponseBody, HashCarrier> {
         return Converter { value: ResponseBody ->
+            val t = value.string()
+
+            val regexe = "~EST Campus~\\|DGI"
+            val patterne = Pattern.compile(regexe, Pattern.MULTILINE)
+            val matchere = patterne.matcher(t)
+            if(matchere.find()) throw LoginException("Already Logged In","")
+
             val regex = "(?<=do_submit\\(')(.)+(?='\\);)"
             val pattern = Pattern.compile(regex, Pattern.MULTILINE)
-            val matcher = pattern.matcher(value.string())
+            val matcher = pattern.matcher(t)
             if (matcher.find()) {
                 return@Converter HashCarrier(
                     FetchType.Successful,
@@ -130,14 +152,16 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 
-    private fun ParseAttendence(): Converter<ResponseBody, AttendanceDto> {
+    private fun parseAttendence(): Converter<ResponseBody, AttendanceDto> {
         return Converter { value1: ResponseBody ->
+            val s = value1.string()
+            println(s)
             val gson = Gson()
-            gson.fromJson(value1.string(), AttendanceDto::class.java)
+            gson.fromJson(s, AttendanceDto::class.java)
         }
     }
 
-    private fun ParseLoginStatus(): Converter<ResponseBody, UserSta> {
+    private fun parseLoginStatus(): Converter<ResponseBody, UserSta> {
         return Converter { value: ResponseBody ->
             val regex = "(?<=name=\"hidUserName\" value=\").+(?=\">)"
             val pattern = Pattern.compile(regex, Pattern.MULTILINE)
@@ -149,7 +173,7 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 
-    private fun ParseProfile(): Converter<ResponseBody, ProfileCarrier?> {
+    private fun parseProfile(): Converter<ResponseBody, ProfileCarrier?> {
         return Converter { value: ResponseBody ->
             val res = value.string()
             val regex = "~EST Campus~\\|DGI"
@@ -204,3 +228,24 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 }
+
+@Serializable
+data class EventTable(
+    val EventTable: List<List<Int>>,
+    val TimeList: List<Int>,
+    val EventList: Map<String, Event>
+)
+
+@Serializable
+data class Event(
+    val time_span: Int,
+    val subjects: List<Subject>,
+    val class_type: Int
+)
+
+@Serializable
+data class Subject(
+    val subject: String,
+    val subject_code: String,
+    val teacher: String
+)

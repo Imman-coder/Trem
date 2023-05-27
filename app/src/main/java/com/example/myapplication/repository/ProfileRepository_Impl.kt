@@ -1,12 +1,15 @@
 package com.example.myapplication.repository
 
+import android.util.Log
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.domain.model.Result
 import com.example.myapplication.domain.model.ResultSubject
 import com.example.myapplication.domain.model.Sem
 import com.example.myapplication.network.ProfileService
+import com.example.myapplication.network.exceptions.FetchException
 import com.example.myapplication.network.exceptions.LoginException
+import com.example.myapplication.network.model.AttendanceDto
 import com.example.myapplication.network.response.FetchType
 import com.example.myapplication.network.util.AttendenceDtoMapper
 import com.example.myapplication.network.util.ProfileDtoMapper
@@ -26,7 +29,7 @@ class ProfileRepository_Impl(
             val hash = profileService.getHash()
 
             if (hash.type == FetchType.Unsuccessful)
-                throw LoginException("Unable to fetch Hash Key", "Please try again after somtime")
+                throw LoginException("Unable to fetch Hash Key", "Unable to fetch HashKey")
 
             val shaPass = encrypt.getSha512(encrypt.getSha512("$id#$password") + "#${hash.data}")
             val pass = encrypt.getMd5(encrypt.getMd5("$id#$password") + "#${hash.data}")
@@ -48,13 +51,14 @@ class ProfileRepository_Impl(
         val sta = profileService.getUserSta()
 
         if (sta.type == FetchType.Successful && sta.usercode != null) {
-            return attendenceMapper.mapToDomainModel(profileService.getAttendence(
+            val attendance = profileService.getAttendence(
                 sem = sem.toString(),
                 studentCode = sta.usercode
-            ))
+            )
+            return attendenceMapper.mapToDomainModel(attendance)
         }
-
-
+        Log.e("Sta",sta.toString())
+        throw FetchException("Unable to fetch userStableData","Failed to fetch Attendence")
         return Attendance()
     }
 

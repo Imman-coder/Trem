@@ -2,6 +2,7 @@ package com.example.myapplication.network
 
 import com.example.myapplication.network.model.AttendanceDto
 import com.example.myapplication.network.model.ResultDto
+import com.example.myapplication.network.model.TimetableDto
 import com.example.myapplication.network.response.HashCarrier
 import com.example.myapplication.network.response.ProfileCarrier
 import com.example.myapplication.network.response.UserSta
@@ -10,6 +11,7 @@ import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ProfileService {
@@ -56,4 +58,11 @@ interface ProfileService {
 
     ):ResultDto
 
+}
+
+interface DataService{
+    @GET("{fn}")
+    suspend fun getTimetable(
+        @Path("fn") filename:String
+    ):TimetableDto
 }
