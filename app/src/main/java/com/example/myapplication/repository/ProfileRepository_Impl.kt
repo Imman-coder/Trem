@@ -4,18 +4,14 @@ import android.util.Log
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.domain.model.Result
-import com.example.myapplication.domain.model.ResultSubject
-import com.example.myapplication.domain.model.Sem
 import com.example.myapplication.network.ProfileService
 import com.example.myapplication.network.exceptions.FetchException
 import com.example.myapplication.network.exceptions.LoginException
-import com.example.myapplication.network.model.AttendanceDto
 import com.example.myapplication.network.response.FetchType
 import com.example.myapplication.network.util.AttendenceDtoMapper
 import com.example.myapplication.network.util.ProfileDtoMapper
 import com.example.myapplication.network.util.ResultDtoMapper
 import com.example.myapplication.network.util.encrypt
-import com.example.myapplication.network.util.gradeMapper
 import java.net.SocketTimeoutException
 
 class ProfileRepository_Impl(
@@ -29,7 +25,11 @@ class ProfileRepository_Impl(
             val hash = profileService.getHash()
 
             if (hash.type == FetchType.Unsuccessful)
-                throw LoginException("Unable to fetch Hash Key", "Unable to fetch HashKey")
+                throw LoginException(
+                    "Unable to fetch Hash Key",
+                    "Unable to fetch HashKey",
+                    LoginException.Error.NetworkError
+                )
 
             val shaPass = encrypt.getSha512(encrypt.getSha512("$id#$password") + "#${hash.data}")
             val pass = encrypt.getMd5(encrypt.getMd5("$id#$password") + "#${hash.data}")
@@ -40,9 +40,15 @@ class ProfileRepository_Impl(
             if (response.type == FetchType.Successful && response.data != null)
                 return profileMapper.mapToDomainModel(response.data)
             else
-                throw LoginException("Login Failed", "Invalid Credentials")
+                throw LoginException(
+                    "Login Failed", "Invalid Credentials",
+                    LoginException.Error.InvalidCredentials
+                )
         } catch (e: SocketTimeoutException) {
-            throw LoginException("Failed to connect to the Internet", "No Intenet")
+            throw LoginException(
+                "Failed to connect to the Internet", "No Intenet",
+                LoginException.Error.NetworkError
+            )
         }
     }
 
@@ -57,8 +63,8 @@ class ProfileRepository_Impl(
             )
             return attendenceMapper.mapToDomainModel(attendance)
         }
-        Log.e("Sta",sta.toString())
-        throw FetchException("Unable to fetch userStableData","Failed to fetch Attendence")
+        Log.e("Sta", sta.toString())
+        throw FetchException("Unable to fetch userStableData", "Failed to fetch Attendence")
         return Attendance()
     }
 

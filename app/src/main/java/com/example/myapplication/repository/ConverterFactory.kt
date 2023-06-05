@@ -13,6 +13,7 @@ import com.example.myapplication.network.response.FetchType
 import com.example.myapplication.network.response.HashCarrier
 import com.example.myapplication.network.response.ProfileCarrier
 import com.example.myapplication.network.response.UserSta
+import com.example.myapplication.presentation.navigation.login.LoginViewModel
 import com.google.gson.Gson
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.parser.PdfTextExtractor
@@ -27,6 +28,8 @@ import java.nio.file.StandardOpenOption
 import java.util.Arrays
 import java.util.Objects
 import java.util.regex.Pattern
+import kotlin.io.path.deleteExisting
+import kotlin.io.path.deleteIfExists
 
 class ConverterFactory : Converter.Factory() {
     override fun responseBodyConverter(
@@ -119,8 +122,10 @@ class ConverterFactory : Converter.Factory() {
                         sems = li2
                     )
                     println(r)
+                    tempFile.deleteIfExists()
 
                 } catch (e: Exception) {
+                    tempFile.deleteIfExists()
                     println("Error found is : \n$e")
                 }
             } catch (e: IOException) {
@@ -137,7 +142,7 @@ class ConverterFactory : Converter.Factory() {
             val regexe = "~EST Campus~\\|DGI"
             val patterne = Pattern.compile(regexe, Pattern.MULTILINE)
             val matchere = patterne.matcher(t)
-            if(matchere.find()) throw LoginException("Already Logged In","")
+            if(matchere.find()) throw LoginException("Already Logged In","",LoginException.Error.AlreadyLoggedIn)
 
             val regex = "(?<=do_submit\\(')(.)+(?='\\);)"
             val pattern = Pattern.compile(regex, Pattern.MULTILINE)
@@ -184,7 +189,7 @@ class ConverterFactory : Converter.Factory() {
             val rollregex = "(?<=Roll No.</b> - ).*(?=</li>)"
             val programcatregex = "(?<=Program Category</b> - ).*(?= , )"
             val semregex = "(?<=Semester</b> - )\\d(?=</li>)"
-            val programregex = "(?<=Program </b> - ).*(?= ,)"
+            val branchregex = "(?<=Program </b> - ).*(?= ,)"
             val sectionregex = "(?<=Section</b> - )[A-Z](?=</li)"
             var pattern = Pattern.compile(regex, Pattern.MULTILINE)
             var matcher = pattern.matcher(res)
@@ -193,24 +198,36 @@ class ConverterFactory : Converter.Factory() {
                 pattern = Pattern.compile(nameregex, Pattern.MULTILINE)
                 matcher = pattern.matcher(res)
                 if (matcher.find()) name = matcher.group(0)
+                
                 var reedgno: Long = -1
                 pattern = Pattern.compile(redgregex, Pattern.MULTILINE)
                 matcher = pattern.matcher(res)
                 if (matcher.find()) reedgno = Objects.requireNonNull(matcher.group(0)).toLong()
+                
                 var phone: Long = -1
                 pattern = Pattern.compile(phoneregex, Pattern.MULTILINE)
                 matcher = pattern.matcher(res)
                 if (matcher.find()) phone = Objects.requireNonNull(matcher.group(0)).toLong()
+                
                 var sem = -1
                 pattern = Pattern.compile(semregex, Pattern.MULTILINE)
                 matcher = pattern.matcher(res)
                 if (matcher.find()) sem = Objects.requireNonNull(matcher.group(0)).toInt()
+                
                 var program: String? = ""
                 pattern = Pattern.compile(programcatregex, Pattern.MULTILINE)
                 matcher = pattern.matcher(res)
                 if (matcher.find()) program = matcher.group(0)
+                
+                var branch:String? =""
+                pattern = Pattern.compile(branchregex, Pattern.MULTILINE)
+                matcher = pattern.matcher(res)
+                if (matcher.find()) branch = matcher.group(0)
+
+                
                 assert(name != null)
                 assert(program != null)
+
                 return@Converter ProfileCarrier(
                     FetchType.Successful,
                     ProfileDto(
@@ -219,6 +236,7 @@ class ConverterFactory : Converter.Factory() {
                         phone,
                         sem,
                         program!!,
+                        branch!!,
                         null,
                         null
                     )

@@ -11,6 +11,7 @@ data class ProfileDto (
     val phoneno : Long = -1,
     val sem : Int = -1,
     val program : String = "",
+    val branch : String,
     val attendance: Attendance? = null,
     val result: Result? = null
 )

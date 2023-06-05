@@ -12,17 +12,16 @@ import com.example.myapplication.network.exceptions.UpdateException
 import com.example.myapplication.repository.DataRepository
 import com.example.myapplication.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
-class mainViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     val profileStore: DataStore<Profile>,
     val credentialStore: DataStore<Credentials>,
     private val profileRepository: ProfileRepository,
-    private val dataRepository: DataRepository
+    private val dataRepository: DataRepository,
 ) : ViewModel() {
+
 
     fun getLProfileStore() = profileStore
 
@@ -32,6 +31,7 @@ class mainViewModel @Inject constructor(
     private var updatedAttendance = false
     private var updatedResult = false
     private var updatedTimetable = false
+
 
     suspend fun updateProfile(uid: String = "", pass: String = "") {
         if (!updatedProfile) {
@@ -57,7 +57,7 @@ class mainViewModel @Inject constructor(
 //                println("login with ..2")
 //            }
         } else
-            throw LoginException("already logged in ", "Already logged in")
+            throw LoginException("already logged in ", "Already logged in",LoginException.Error.AlreadyLoggedIn)
     }
 
     suspend fun updateAttendence() {
@@ -82,10 +82,6 @@ class mainViewModel @Inject constructor(
             setTimetable(dataRepository.getTable("testTable.json"))
             updatedTimetable = true
         }
-    }
-
-    suspend fun removeCredentials() {
-        credentialStore.updateData { Credentials() }
     }
 
 
@@ -140,6 +136,10 @@ class mainViewModel @Inject constructor(
                 hasCredentials = true, uid = uid, pass = pass
             )
         }
+    }
+    suspend fun setFakeCredentials(sem:Int,program:String,branch:String) {
+        credentialStore.updateData { Credentials(hasCredentials = true, isFakeLoggedIn = true) }
+        profileStore.updateData { Profile(sem = sem, branch = branch, program = program) }
     }
 
 }

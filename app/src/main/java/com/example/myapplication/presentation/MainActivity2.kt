@@ -1,21 +1,20 @@
 package com.example.myapplication.presentation
 
-import android.annotation.SuppressLint
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,13 +23,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
@@ -46,54 +42,131 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.viewModelScope
 import com.example.myapplication.R
+import com.example.myapplication.domain.model.AppPreferences
 import com.example.myapplication.domain.model.Credentials
+import com.example.myapplication.domain.model.Timetable
 import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.presentation.components.NavBarItem
+import com.example.myapplication.presentation.components.notification.NotificationContentBuilder
+import com.example.myapplication.presentation.components.notification.TimetableNotificationService
 import com.example.myapplication.presentation.navigation.main.Dashboard
+import com.example.myapplication.presentation.navigation.main.MainVM
+import com.example.myapplication.presentation.navigation.main.Profile
 import com.example.myapplication.presentation.navigation.main.Tts
-import com.example.myapplication.presentation.navigation.main.mainViewModel
+import com.example.myapplication.presentation.navigation.main.MainViewModel
+import com.example.myapplication.presentation.navigation.settings.SettingsMain
+import com.example.myapplication.presentation.navigation.settings.SettingsViewModel
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
+
 @AndroidEntryPoint
 class MainActivity2 : AppCompatActivity() {
+    private val TAG = "MainActivity2"
 
-    private val model: mainViewModel by viewModels()
+    private val model: MainViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
+    private val mainVM: MainVM by viewModels()
+    private var launchedByNotification = false
 
-
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        launchedByNotification = intent.getBooleanExtra(TimetableNotificationService.TIMETABLE_NOTIFICATION_RECEIVER,false)
+
         setContent {
-            MyApplicationTheme(
-//                darkTheme = true,
-//                dynamicColor = false
-            ) {
+            MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Main()
 
-                    val k = model.credentialStore.data.collectAsState(initial = Credentials(uid = "nothing")).value
+                    val notificationService = TimetableNotificationService(applicationContext)
+                    val settings = settingsViewModel.getAppPreference().data.collectAsState(
+                        initial = AppPreferences(
+                            false,
+                            false,
+                            false
+                        )
+                    ).value
+                    val timetable =
+                        model.profileStore.data.collectAsState(initial = com.example.myapplication.domain.model.Profile(timetable = Timetable(TimeList = listOf()))).value.timetable
+
+                    fun updateNotification() {
+                        if (timetable != Timetable(TimeList = listOf())) {
+                            val w = NotificationContentBuilder.buildContent(timetable)
+                            notificationService.showNotification(w)
+                        }
+
+                    }
+
+                    val kop = mainVM.timetableState.value
+
+                    LaunchedEffect(key1 = kop, block = {
+                        Log.d(
+                            TAG,
+                            "onCreate: $kop"
+                        )})
+
+
+                    DisposableEffect(key1 = timetable) {
+                        if (settings.showNotifications) {
+//                            if(checkNotificationPermission(this@MainActivity2))
+                                    updateNotification()
+
+                        }
+                        onDispose {
+                            if (settings.showNotifications)
+                                notificationService.unregisterAManager()
+                        }
+                    }
+
+                    DisposableEffect(key1 = settings) {
+                        if (settings.showNotifications) {
+                            when {
+                                ContextCompat.checkSelfPermission(this@MainActivity2, Manifest.permission.POST_NOTIFICATIONS) ==
+                                        PackageManager.PERMISSION_GRANTED -> {
+                                    Log.e("TAG", "User accepted the notifications!")
+                                    updateNotification()
+                                }
+                                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+
+                                }
+                                else -> {
+                                    ActivityCompat.requestPermissions(
+                                        this@MainActivity2,
+                                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                        1
+                                    )
+                                }
+                            }
+                        }
+                        onDispose {
+                            if (settings.showNotifications)
+                                notificationService.unregisterAManager()
+                        }
+                    }
+
+
+                    val k =
+                        model.credentialStore.data.collectAsState(initial = Credentials(uid = "nothing")).value
                     LaunchedEffect(key1 = k) {
-                        if (isOnline(this@MainActivity2)) {
+                        if (isOnline(this@MainActivity2) && false) {
                             if (k.uid != "nothing") {
                                 try {
                                     model.updateProfile(k.uid, k.pass)
@@ -106,9 +179,11 @@ class MainActivity2 : AppCompatActivity() {
                                     ).show()
                                     e.printStackTrace()
                                     Log.d("MainScreen", "Login failed")
+                                    return@LaunchedEffect
                                 } catch (e: java.lang.Exception) {
                                     e.printStackTrace()
                                     Log.d("MainScreen", "Login failed")
+                                    return@LaunchedEffect
                                 }
 
                                 try {
@@ -167,68 +242,90 @@ class MainActivity2 : AppCompatActivity() {
     @Composable
     fun Main() {
         var selected by remember { mutableStateOf("Home") }
+        var openSettings by remember { mutableStateOf(false) }
         val pagerState = rememberPagerState()
         val k = rememberCoroutineScope()
-        
-        HorizontalPager(
-            pageCount = if (selected=="Home") 2 else 1, state = pagerState, modifier = Modifier
+
+        if (launchedByNotification) LaunchedEffect(
+            key1 = Unit,
+            block = { pagerState.scrollToPage(1) })
+
+
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
+        ) {
+            HorizontalPager(
+                pageCount = if (selected == "Home") 2 else 1,
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
 
-        ) { page ->
-            when (page) {
-                0 -> {
-                    Column {
-                        androidx.compose.ui.viewinterop.AndroidView(modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            ,
-                            factory = { context ->
-                                val view =
-                                    android.view.LayoutInflater.from(context)
-                                        .inflate(R.layout.activity_main, null, false)
-                                replaceFragment(Dashboard())
-                                view
-                            },
-                            update = { }
-                        )
-                        BottomNavBar(
-                            items = listOf(
-                                NavBarItem(
-                                    "Home",
-                                    Dashboard(),
-                                    androidx.compose.material.icons.Icons.Outlined.Home
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        Column {
+                            androidx.compose.ui.viewinterop.AndroidView(modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                                factory = { context ->
+                                    val view =
+                                        android.view.LayoutInflater.from(context)
+                                            .inflate(R.layout.activity_main, null, false)
+                                    replaceFragment(Dashboard())
+                                    view
+                                },
+                                update = { }
+                            )
+                            BottomNavBar(
+                                items = listOf(
+                                    NavBarItem(
+                                        "Home",
+                                        Dashboard(),
+                                        Icons.Outlined.Home
+                                    ),
+//                                NavBarItem(
+//                                    "Timetable",
+//                                    TimetableScreen(),
+//                                    Icons.Outlined.DateRange
+//                                ),
+                                    NavBarItem(
+                                        "Profile",
+                                        Profile { openSettings = true },
+                                        Icons.Outlined.Person
+                                    ),
                                 ),
-                                NavBarItem(
-                                    "Timetable",
-                                    com.example.myapplication.presentation.navigation.main.TimetableScreen(),
-                                    androidx.compose.material.icons.Icons.Outlined.DateRange
-                                ),
-                                NavBarItem(
-                                    "Profile",
-                                    com.example.myapplication.presentation.navigation.main.Profile(),
-                                    androidx.compose.material.icons.Icons.Outlined.Person
-                                ),
-                            ),
-                            selected = selected,
-                            onItemClick = {
-                                selected = it.name
-                                replaceFragment(it.route)
+                                selected = selected,
+                                onItemClick = {
+                                    selected = it.name
+                                    replaceFragment(it.route)
+                                }
+                            )
+                        }
+                    }
+
+                    1 -> {
+
+                        Column(Modifier.fillMaxSize()) {
+                            Tts(model) {
+                                k.launch {
+                                    pagerState.animateScrollToPage(0)
+                                }
                             }
-                        )
+                        }
                     }
                 }
-                1 -> {
 
-                    Column(Modifier.fillMaxSize()) {
-                        Tts(model)
-                    }
-                }
             }
 
+            if (openSettings) {
+                SettingsMain(settingsViewModel, { finish() }) { openSettings = false }
+            }
         }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (pagerState.currentPage == 0) {
+                if (openSettings) openSettings = false
+                else if (pagerState.currentPage == 0) {
                     if (selected == "Home")
 //                        finish()
                         exitProcess(-1)

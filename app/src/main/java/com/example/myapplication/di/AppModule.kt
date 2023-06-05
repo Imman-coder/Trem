@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.dataStore
 import com.example.myapplication.BaseApplication
+import com.example.myapplication.domain.model.AppPreferences
 import com.example.myapplication.domain.model.Credentials
 import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.domain.model.Serializers.AppPreferencesSerializer
 import com.example.myapplication.domain.model.Serializers.CredentialsSerializer
 import com.example.myapplication.domain.model.Serializers.ProfileSerializer
 import com.example.myapplication.network.util.AttendenceDtoMapper
@@ -17,6 +19,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.util.prefs.Preferences
 import javax.inject.Singleton
 
 //val Context.profileStore by dataStore("profile.json", ProfileSerializer)
@@ -28,6 +31,7 @@ object AppModule{
 
     private val Context.profileStore :DataStore<Profile> by dataStore("profile.json", ProfileSerializer)
     private val Context.credentialsStore: DataStore<Credentials> by dataStore("credentials.json", CredentialsSerializer)
+    private val Context.preferencesStore: DataStore<AppPreferences> by dataStore("preferences.json", AppPreferencesSerializer)
 
 
     @Singleton
@@ -71,6 +75,12 @@ object AppModule{
     @Provides
     fun provideCredentials(@ApplicationContext context: Context):DataStore<Credentials> {
         return context.credentialsStore;
+    }
+
+    @Singleton
+    @Provides
+    fun provideAppPreferences(@ApplicationContext context: Context):DataStore<AppPreferences> {
+        return context.preferencesStore;
     }
 
 

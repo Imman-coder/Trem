@@ -10,6 +10,7 @@ data class Profile (
     val phoneno : Long = -1,
     val sem : Int = -1,
     val program : String = "",
+    val branch : String = "",
     val attendance: List<AttendanceSubject> = listOf(),
     val result: Result = Result(),
     val timetable: Timetable = Timetable()

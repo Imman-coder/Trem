@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,7 +63,6 @@ import com.example.myapplication.presentation.findNear
 import com.example.myapplication.presentation.intToTime
 import com.example.myapplication.presentation.timeToInt
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
-import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -81,7 +79,7 @@ class TimetableScreen : Fragment() {
     ): View {
 
         return ComposeView(requireContext()).apply {
-            val model = ViewModelProvider(requireActivity())[mainViewModel::class.java]
+            val model = ViewModelProvider(requireActivity())[MainViewModel::class.java]
             setContent {
                 val timetable =
                     model.getLProfileStore().data.collectAsState(initial = Profile()).value.timetable
@@ -120,7 +118,7 @@ class TimetableScreen : Fragment() {
                     ) { idx ->
                         selectedDay = idx
                     }
-                    if (timetable.EventList.isNotEmpty()) {
+                    if (timetable.EventList.isNotEmpty() && selectedDay > 0) {
                         TableListViewer(
                             timetable.EventList,
                             timetable.EventTable[selectedDay],
@@ -315,6 +313,7 @@ fun TableListViewer(
                 .padding(start = 80.dp)
                 .padding(top = allTopPadding)
                 .padding(start = pxToDp(circleRadius) * 2)
+
         ) {
             for (x in eventLine) {
                 TimetableCard(
@@ -377,6 +376,7 @@ fun TimetableCard(modifier: Modifier = Modifier, event: Event, numElem: Int, tim
             .clip(RoundedCornerShape(6.dp))
             .background(MaterialTheme.colorScheme.primary)
             .padding(start = 10.dp),
+
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),

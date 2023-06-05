@@ -21,12 +21,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -53,6 +49,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.myapplication.domain.model.AttendanceSubject
 import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.presentation.components.shimmerEffect
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -60,7 +57,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class Dashboard : Fragment() {
 
-    val model: mainViewModel by viewModels()
+    val model: MainViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -119,13 +116,23 @@ private fun AttendanceListView(profile: Profile) {
     Text(text = "Attendance", style = MaterialTheme.typography.headlineLarge)
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
-//        columns = StaggeredGridCells.Adaptive(120.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-//        modifier = Modifier.height(200.dp)
     ) {
-        items(profile.attendance.size) { i ->
-            AttendanceCard(profile.attendance[i])
+        if (profile.attendance.isNotEmpty()) {
+            items(profile.attendance.size) { i ->
+                AttendanceCard(profile.attendance[i])
+            }
+        }
+        else {
+            items(10) {
+                Spacer(modifier  = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .width(150.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .shimmerEffect())
+            }
         }
     }
 }

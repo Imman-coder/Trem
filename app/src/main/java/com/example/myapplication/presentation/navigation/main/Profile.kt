@@ -21,15 +21,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,62 +53,76 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.domain.model.Profile
-import com.example.myapplication.domain.model.ResultSubject
 import com.example.myapplication.domain.model.Sem
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import kotlin.math.ceil
 
 
-class Profile :Fragment(){
+class Profile(private val openSettings: () -> Unit) :Fragment(){
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-    val model = ViewModelProvider(requireActivity())[mainViewModel::class.java]
-        return ComposeView(requireContext()).apply {
+    val model = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+        
+    return ComposeView(requireContext()).apply {
             setContent {
                 ProfileScreen(profileStore = model.profileStore)
             }
         }
     }
-}
 
-@Composable
-fun ProfileScreen(profileStore:DataStore<Profile>) {
+    @Composable
+    fun ProfileScreen(profileStore: DataStore<Profile>) {
 
-    val profile = profileStore.data.collectAsState(initial = Profile()).value
+        val profile = profileStore.data.collectAsState(initial = Profile()).value
 
-    LaunchedEffect(key1 = profile.result){
+        LaunchedEffect(key1 = profile.result){
 
-    }
+        }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        LazyColumn{
-            item {
-                ProfileCard(profile)
-                ResultSection(profile)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Row(
+                Modifier
+                    .height(50.dp)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 10.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ){
+                Spacer(modifier = Modifier.size(24.dp))
+                Text(text = "Profile",color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleLarge)
+                Icon(imageVector = Icons.Default.Settings, contentDescription = "Menu",Modifier.clickable { openSettings() },tint=MaterialTheme.colorScheme.onSurface)
+            }
+            Divider()
+            LazyColumn{
+                item {
+                    ProfileCard(profile)
+                    ResultSection(profile)
+                }
             }
         }
-    }
 
+    }
 }
+
 
 @Composable
 private fun ResultSection(profile:Profile) {
     val expanded = remember { mutableStateOf(-1) }
     Column(Modifier.padding(15.dp)) {
         Text(text = "Results")
-//        LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             profile.result.sems.map {
                 SemCard(it, it.sem == expanded.value) {
                     if (expanded.value != it.sem) {
@@ -117,7 +134,6 @@ private fun ResultSection(profile:Profile) {
                 Spacer(modifier = Modifier.padding(5.dp))
             }
         }
-//    }
 }
 
 @Composable

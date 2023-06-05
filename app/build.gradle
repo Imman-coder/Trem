@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.myapplication"
-        minSdk 24
+        minSdk 26
         targetSdk 33
         versionCode 1
         versionName "1.0"
@@ -27,6 +27,7 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -99,6 +100,15 @@ dependencies {
 
     implementation 'androidx.compose.foundation:foundation:1.4.3'
     implementation "com.github.skydoves:balloon-compose:1.5.2"
+
+    def work = "2.8.1"
+    implementation "androidx.work:work-runtime-ktx:$work"
+
+    implementation 'com.madgag.spongycastle:core:1.54.0.0'
+    implementation 'com.madgag.spongycastle:prov:1.54.0.0'
+    implementation 'com.madgag.spongycastle:pkix:1.54.0.0'
+    implementation 'com.madgag.spongycastle:pg:1.54.0.0'
+
 }
 
 kapt {
