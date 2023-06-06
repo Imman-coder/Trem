@@ -6,6 +6,7 @@ import com.example.myapplication.presentation.findNear
 import com.example.myapplication.presentation.getSystemDayOfWeekInt
 import com.example.myapplication.presentation.getSystemTimeInt
 import com.example.myapplication.presentation.getTodayEventFromTime
+import com.example.myapplication.presentation.getTodayLastTime
 import com.example.myapplication.presentation.intToTime
 
 
@@ -36,7 +37,7 @@ class NotificationContentBuilder {
             }
 
 
-            else if (currentTime > timetable.TimeList[timetable.EventTable[currentDay][timetable.EventTable[currentDay].size - 1] + timetable.EventList[timetable.EventTable[currentDay][timetable.EventTable[currentDay].size - 1]].time_span]) {
+            else if (currentTime > getTodayLastTime(timetable)) {
                 message.title = "Class Finished!"
                 message.content = "All class finished for today!"
                 message.eventType = EventType.Finished
@@ -54,7 +55,7 @@ class NotificationContentBuilder {
                 if (event.class_type == ClassType.Notice) {
                     message.title = event.subjects[0].subject
                     message.content =
-                        "${timetable.TimeList[0] - currentTime} minutes reamaining"
+                        "${timetable.TimeList[0] - currentTime} minutes remaining"
                 }
 
                 if (event.class_type == ClassType.Lab) {

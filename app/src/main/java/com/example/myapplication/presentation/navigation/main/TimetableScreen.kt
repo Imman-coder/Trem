@@ -69,95 +69,95 @@ import java.util.Date
 
 val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-class TimetableScreen : Fragment() {
-
-     private var receiver: BroadcastReceiver?=null
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-
-        return ComposeView(requireContext()).apply {
-            val model = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-            setContent {
-                val timetable =
-                    model.getLProfileStore().data.collectAsState(initial = Profile()).value.timetable
-                var currentTime by remember { mutableStateOf(0) }
-                var selectedDay by remember { mutableStateOf(-1) }
-                var todayDay by remember { mutableStateOf(0) }
-
-
-                fun UpdateTime() {
-                    Log.d("Intent","Time updated")
-                    val sdf = SimpleDateFormat("hh:mma")
-                    val currentDate = sdf.format(Date())
-                    currentTime = timeToInt(currentDate)
-
-                    val calendar = Calendar.getInstance()
-                    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 2
-                    println(dayOfWeek)
-                    todayDay = dayOfWeek
-
-                    if(selectedDay==-1){
-                        selectedDay = todayDay
-                    }
-                }
-                UpdateTime()
-                if(receiver==null)
-                    receiver = object : BroadcastReceiver() {
-                        override fun onReceive(context: Context?, intent: Intent?) {
-                            UpdateTime()
-                        }
-                    }
-
-                Column {
-                    DaySelector(
-                        selectedDay = selectedDay,
-                        todayDay=todayDay
-                    ) { idx ->
-                        selectedDay = idx
-                    }
-                    if (timetable.EventList.isNotEmpty() && selectedDay > 0) {
-                        TableListViewer(
-                            timetable.EventList,
-                            timetable.EventTable[selectedDay],
-                            timetable.TimeList,
-                            currentTime
-                        )
-                    }
-                }
-
-            }
-        }
-    }
-
-
-    override fun onStart() {
-        super.onStart()
-
-        val intentFilter = IntentFilter().apply {
-            addAction(Intent.ACTION_TIME_TICK)
-            addAction(Intent.ACTION_TIME_CHANGED)
-            addAction(Intent.ACTION_TIMEZONE_CHANGED)
-            addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
-        }
-        try {
-            context?.let { receiver?.let { it1 ->
-                it.registerReceiver(
-                    it1, intentFilter)
-            } }
-        }
-        catch (_:Exception){}
-    }
-
-    override fun onStop() {
-        super.onStop()
-        try {
-            context?.unregisterReceiver(receiver)
-        } catch (_: Exception) {}
-    }
-}
+//class TimetableScreen : Fragment() {
+//
+//     private var receiver: BroadcastReceiver?=null
+//    override fun onCreateView(
+//        inflater: LayoutInflater,
+//        container: ViewGroup?,
+//        savedInstanceState: Bundle?
+//    ): View {
+//
+//        return ComposeView(requireContext()).apply {
+//            val model = ViewModelProvider(requireActivity())[MainViewModel::class.java]
+//            setContent {
+//                val timetable =
+//                    model.getLProfileStore().data.collectAsState(initial = Profile()).value.timetable
+//                var currentTime by remember { mutableStateOf(0) }
+//                var selectedDay by remember { mutableStateOf(-1) }
+//                var todayDay by remember { mutableStateOf(0) }
+//
+//
+//                fun UpdateTime() {
+//                    Log.d("Intent","Time updated")
+//                    val sdf = SimpleDateFormat("hh:mma")
+//                    val currentDate = sdf.format(Date())
+//                    currentTime = timeToInt(currentDate)
+//
+//                    val calendar = Calendar.getInstance()
+//                    val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 2
+//                    println(dayOfWeek)
+//                    todayDay = dayOfWeek
+//
+//                    if(selectedDay==-1){
+//                        selectedDay = todayDay
+//                    }
+//                }
+//                UpdateTime()
+//                if(receiver==null)
+//                    receiver = object : BroadcastReceiver() {
+//                        override fun onReceive(context: Context?, intent: Intent?) {
+//                            UpdateTime()
+//                        }
+//                    }
+//
+//                Column {
+//                    DaySelector(
+//                        selectedDay = selectedDay,
+//                        todayDay=todayDay
+//                    ) { idx ->
+//                        selectedDay = idx
+//                    }
+//                    if (timetable.EventList.isNotEmpty() && selectedDay > 0) {
+//                        TableListViewer(
+//                            timetable.EventList,
+//                            timetable.EventTable[selectedDay],
+//                            timetable.TimeList,
+//                            currentTime
+//                        )
+//                    }
+//                }
+//
+//            }
+//        }
+//    }
+//
+//
+//    override fun onStart() {
+//        super.onStart()
+//
+//        val intentFilter = IntentFilter().apply {
+//            addAction(Intent.ACTION_TIME_TICK)
+//            addAction(Intent.ACTION_TIME_CHANGED)
+//            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+//            addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
+//        }
+//        try {
+//            context?.let { receiver?.let { it1 ->
+//                it.registerReceiver(
+//                    it1, intentFilter)
+//            } }
+//        }
+//        catch (_:Exception){}
+//    }
+//
+//    override fun onStop() {
+//        super.onStop()
+//        try {
+//            context?.unregisterReceiver(receiver)
+//        } catch (_: Exception) {}
+//    }
+//}
 
 @Composable
 fun DaySelector(selectedDay: Int,todayDay:Int, modifier: Modifier = Modifier.fillMaxWidth(), onSelect: (Int) -> Unit) {

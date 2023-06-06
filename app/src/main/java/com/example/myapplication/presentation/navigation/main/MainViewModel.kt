@@ -1,145 +1,286 @@
 package com.example.myapplication.presentation.navigation.main
 
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.myapplication.BaseApplication
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Credentials
 import com.example.myapplication.domain.model.Profile
-import com.example.myapplication.domain.model.Result
+import com.example.myapplication.domain.model.Scorecard
 import com.example.myapplication.domain.model.Timetable
 import com.example.myapplication.network.exceptions.LoginException
-import com.example.myapplication.network.exceptions.UpdateException
+import com.example.myapplication.presentation.generateLogTag
 import com.example.myapplication.repository.DataRepository
 import com.example.myapplication.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    val profileStore: DataStore<Profile>,
-    val credentialStore: DataStore<Credentials>,
+    private val credentialsDataStore: DataStore<Credentials>,
+    private val profileDataStore: DataStore<Profile>,
+    private val timetableDataStore: DataStore<Timetable>,
+    private val scorecardDataStore: DataStore<Scorecard>,
+    private val attendanceDataStore: DataStore<Attendance>,
+
     private val profileRepository: ProfileRepository,
     private val dataRepository: DataRepository,
+
+    val app: BaseApplication
 ) : ViewModel() {
 
-
-    fun getLProfileStore() = profileStore
-
-    private var sem = -1
-
-    private var updatedProfile = false
-    private var updatedAttendance = false
-    private var updatedResult = false
-    private var updatedTimetable = false
+    private val TAG = generateLogTag(MainViewModel::class.java.simpleName)
 
 
-    suspend fun updateProfile(uid: String = "", pass: String = "") {
-        if (!updatedProfile) {
-            if (uid != "" && pass != "") {
-                println("login with $uid , $pass")
-                val k = profileRepository.Login(uid, pass)
-                setProfile(k)
-                println(k)
-                sem = k.sem
-                updatedProfile = true
-                return
+    private val _credentials = MutableStateFlow<Credentials?>(null)
+    val credentials = _credentials.asStateFlow()
+
+    private val _profileState = MutableStateFlow(DataState<Profile>())
+    val profileState = _profileState.asStateFlow()
+
+    private val _timetableState = MutableStateFlow(DataState<Timetable>())
+    val timetableState = _timetableState.asStateFlow()
+
+    private val _scorecardState = MutableStateFlow(DataState<Scorecard>())
+    val scorecardState = _scorecardState.asStateFlow()
+
+    private val _attendanceState = MutableStateFlow(DataState<Attendance>())
+    val attendanceState = _attendanceState.asStateFlow()
+
+    private val _hasCredentials = MutableStateFlow(true)
+    val hasCredentials = _hasCredentials.asStateFlow()
+
+    init {
+        loadCredentials()
+    }
+
+    private fun loadCredentials() {
+        viewModelScope.launch {
+            println("loading values")
+            credentialsDataStore.data.collect { userData ->
+                _credentials.value = userData
+                _hasCredentials.value = !((!userData.hasCredentials) || (userData.isFakeLoggedIn))
             }
-//            else {
-//                println("login with ..")
-//                credentialStore.data.map {
-//                    println("login with ${it.uid} , ${it.pass}")
-//                    val k = profileRepository.Login(it.uid, it.pass)
-//                    runBlocking { setProfile(k) }
-//                    println(k)
-//                    sem = k.sem
-//                    updatedProfile = true
-//                }
-//                println("login with ..2")
-//            }
-        } else
-            throw LoginException("already logged in ", "Already logged in",LoginException.Error.AlreadyLoggedIn)
-    }
-
-    suspend fun updateAttendence() {
-        if (!updatedAttendance) {
-            val attendence = profileRepository.getAttendance(sem)
-            println(attendence)
-            setAttendance(attendence)
-            updatedAttendance = true
+        }
+        viewModelScope.launch {
+            println("loading profile")
+            profileDataStore.data.collect { profile ->
+                if (profile != Profile()) {
+                    _profileState.value =
+                        DataState(
+                            dataBy = DataState.DataBy.Cache,
+                            DataState.DataState.Idle,
+                            profile
+                        )
+                }
+            }
+        }
+        viewModelScope.launch {
+            println("loading attendance")
+            attendanceDataStore.data.collect { attendance ->
+                if (attendance != Attendance()) {
+                    _attendanceState.value =
+                        DataState(
+                            dataBy = DataState.DataBy.Cache,
+                            DataState.DataState.Idle,
+                            attendance
+                        )
+                }
+            }
+        }
+        viewModelScope.launch {
+            println("loading scorecard")
+            scorecardDataStore.data.collect { scorecard ->
+                if (scorecard != Scorecard()) {
+                    _scorecardState.value =
+                        DataState(
+                            dataBy = DataState.DataBy.Cache,
+                            DataState.DataState.Idle,
+                            scorecard
+                        )
+                }
+            }
+        }
+        viewModelScope.launch {
+            println("loading timetable")
+            timetableDataStore.data.collect { timetable ->
+                if (timetable != Timetable()) {
+                    _timetableState.value = DataState(
+                        dataBy = DataState.DataBy.Cache,
+                        DataState.DataState.Idle,
+                        timetable
+                    )
+                }
+            }
         }
     }
 
-
-    suspend fun updateResult() {
-        if (!updatedResult) {
-            setResult(profileRepository.getResults())
-            updatedResult = true
-        }
-    }
-
-    suspend fun updateTimetable() {
-        if (!updatedTimetable) {
-            setTimetable(dataRepository.getTable("testTable.json"))
-            updatedTimetable = true
-        }
-    }
-
-
-    private suspend fun setProfile(profile: Profile) {
-        profileStore.updateData {
-            it.copy(
-                name = profile.name,
-                redgno = profile.redgno,
-                phoneno = profile.phoneno,
-                sem = profile.sem,
-                program = profile.program,
-            )
-        }
-    }
-
-    private suspend fun setAttendance(attendance: Attendance) {
-        if(attendance== Attendance())
-            throw UpdateException("Attendence received is empty")
-
-        profileStore.updateData {
-            it.copy(
-                attendance = attendance.subs
-            )
-        }
-    }
-
-    private suspend fun setTimetable(timetable: Timetable) {
-        if(timetable== Timetable())
-            throw UpdateException("timetable received is empty")
-
-        profileStore.updateData {
-            it.copy(
-                timetable = timetable
-            )
-        }
-    }
-
-    private suspend fun setResult(result: Result) {
-        if(result== Result())
-            throw UpdateException("Result body is empty")
-        profileStore.updateData {
-            it.copy(
-                result = result
+    suspend fun login() {
+        if (!app.isLoggedIn) {
+            _profileState.value =
+                _profileState.value.copy(dataState = DataState.DataState.Fetching)
+            try {
+                val p = _credentials.value?.let { profileRepository.Login(it.uid, it.pass) }
+                if (p != null) {
+                    profileDataStore.updateData { p }
+                    _profileState.value = _profileState.value.copy(
+                        dataBy = DataState.DataBy.Network, data = p
+                    )
+                }
+                app.isLoggedIn = true
+            } catch (e: LoginException) {
+                e.printStackTrace()
+            }
+            _profileState.value = _profileState.value.copy(
+                dataState = DataState.DataState.Idle,
             )
         }
     }
 
 
-    suspend fun setCredentials(uid: String, pass: String) {
-        credentialStore.updateData {
-            it.copy(
-                hasCredentials = true, uid = uid, pass = pass
+    suspend fun fetchResult() {
+        _scorecardState.value = _scorecardState.value.copy(
+            dataState = DataState.DataState.Fetching,
+        )
+        if (app.isLoggedIn) {
+            Log.d(TAG, "fetchResult: started")
+            try {
+                val result = profileRepository.getResults()
+                Log.d(TAG, "fetchResult: fetched")
+                updateResult(scorecard = result)
+                Log.d("Application", "onCreate: result = $result")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            var k = 0
+            while (k++ < 6 && !app.isLoggedIn) {
+                login()
+            }
+            if (app.isLoggedIn) {
+                fetchResult()
+            } else {
+                Log.d(TAG, "fetchAttendance: Login Failed")
+            }
+        }
+        _scorecardState.value = _scorecardState.value.copy(
+            dataState = DataState.DataState.Idle,
+        )
+    }
+
+    private suspend fun updateResult(scorecard: Scorecard) {
+        if (scorecard == Scorecard())
+            TODO()
+        else {
+            scorecardDataStore.updateData {
+                scorecard
+            }
+            _scorecardState.value = _scorecardState.value.copy(
+                data = scorecard,
             )
         }
     }
-    suspend fun setFakeCredentials(sem:Int,program:String,branch:String) {
-        credentialStore.updateData { Credentials(hasCredentials = true, isFakeLoggedIn = true) }
-        profileStore.updateData { Profile(sem = sem, branch = branch, program = program) }
+
+
+    suspend fun fetchAttendance() {
+        _attendanceState.value = _attendanceState.value.copy(
+            dataState = DataState.DataState.Fetching,
+        )
+        if (app.isLoggedIn) {
+            try {
+                val attendance = profileState.value.data?.let {
+                    profileRepository.getAttendance(it.sem)
+                }
+                if (attendance != null) {
+                    updateAttendance(attendance = attendance)
+                    _attendanceState.value = _attendanceState.value.copy(
+                        data = attendance,
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            var k = 0
+            while (k++ < 6 && !app.isLoggedIn) {
+                login()
+            }
+            if (app.isLoggedIn) {
+                fetchAttendance()
+            } else {
+                Log.d(TAG, "fetchAttendance: Login Failed")
+            }
+        }
+        _attendanceState.value = _attendanceState.value.copy(
+            dataState = DataState.DataState.Idle,
+        )
+    }
+
+    private suspend fun updateAttendance(attendance: Attendance) {
+        if (attendance == Attendance())
+            TODO()
+        else {
+            attendanceDataStore.updateData {
+                attendance
+            }
+            _attendanceState.value = _attendanceState.value.copy(
+                data = attendance,
+            )
+        }
+    }
+
+
+    suspend fun fetchTimetable() {
+        _timetableState.value = _timetableState.value.copy(
+            dataState = DataState.DataState.Fetching,
+        )
+        try {
+            Log.d(TAG, "fetchTimetable: Fetching Timetable ")
+            val timetable = dataRepository.getTable()
+            updateTimetable(timetable = timetable)
+        } catch (e: Exception) {
+            e.printStackTrace()
+
+        }
+        _timetableState.value = _timetableState.value.copy(
+            dataState = DataState.DataState.Idle,
+        )
+    }
+
+    private suspend fun updateTimetable(timetable: Timetable) {
+        if (timetable == Timetable())
+            TODO()
+        else {
+            timetableDataStore.updateData {
+                timetable
+            }
+            _timetableState.value = _timetableState.value.copy(
+                data = timetable,
+            )
+        }
+    }
+
+    data class DataState<T>(
+        val dataBy: DataBy = DataBy.NotAvailable,
+        val dataState: DataState = DataState.Idle,
+        val data: T? = null
+    ) {
+        sealed class DataBy {
+            object Cache : DataBy()
+            object Network : DataBy()
+            object NotAvailable : DataBy()
+        }
+
+        sealed class DataState {
+            object Fetching : DataState()
+            object Idle : DataState()
+        }
+
     }
 
 }

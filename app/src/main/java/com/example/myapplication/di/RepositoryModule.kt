@@ -31,7 +31,7 @@ object RepositoryModule {
         return ProfileRepository_Impl(
             profileService = profileService,
             profileMapper = profileMapper,
-            attendenceMapper = attendenceMapper,
+            attendanceMapper = attendenceMapper,
             resultMapper = resultMapper
 
         )

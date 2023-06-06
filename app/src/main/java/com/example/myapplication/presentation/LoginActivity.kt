@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.presentation.navigation.login.LoginScreen
 import com.example.myapplication.presentation.navigation.login.LoginViewModel
 import com.example.myapplication.presentation.navigation.login.LoginViewModel.LoginUiState
@@ -36,6 +36,8 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class LoginActivity : ComponentActivity() {
+
+    private val viewModel : LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,13 +57,13 @@ class LoginActivity : ComponentActivity() {
     @Composable
     private fun Main() {
       
-        val viewModel: LoginViewModel = viewModel()
+//        val viewModel: LoginViewModel = viewModel()
         val uiState = viewModel.uiState.value
 
 
         //Handles the UI state when the user is logged in as a fake user.
         if (uiState.loggedInAs == LoginUiState.LoggedInUser.Fake) {
-            val intent = Intent(this@LoginActivity, FakeLoggedInActivity::class.java)
+            val intent = Intent(this@LoginActivity, FakeMainActivity::class.java)
             startActivity(intent)
             finish()
         }
@@ -69,7 +71,8 @@ class LoginActivity : ComponentActivity() {
         
         //Handles the UI state when the actual user is logged in.
         if (uiState.loggedInAs == LoginUiState.LoggedInUser.Original) {
-            val intent = Intent(this@LoginActivity, MainActivity2::class.java)
+            println("via Original")
+            val intent = Intent(this@LoginActivity, MainActivity::class.java)
             startActivity(intent)
             finish()
         }

@@ -21,19 +21,24 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
-            android:name=".presentation.MainActivity2"
+            android:name=".presentation.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar" >
+            android:theme="@style/Theme.MyApplication" >
         </activity>
         <activity
-            android:name=".presentation.FakeLoggedInActivity"
+            android:name=".presentation.SettingsActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar" >
+            android:theme="@style/Theme.MyApplication" >
+        </activity>
+        <activity
+            android:name=".presentation.FakeMainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication" >
         </activity>
         <activity
             android:name=".presentation.LoginActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.NoActionBar">
+            android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

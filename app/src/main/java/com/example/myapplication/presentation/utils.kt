@@ -8,6 +8,10 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.app.ActivityCompat
 import com.example.myapplication.domain.model.ClassType
 import com.example.myapplication.domain.model.Event
@@ -227,15 +231,37 @@ fun isOnline(context: Context): Boolean {
     return false
 }
 
-suspend fun requestPermissionSuspend(activity: Activity, permission: String): Unit = withContext(Dispatchers.Main) {
-    suspendCancellableCoroutine<Boolean> { continuation ->
-        val callback = { grantResults: IntArray ->
-            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            continuation.resume(granted)
-        }
-        ActivityCompat.requestPermissions(activity, arrayOf(permission), 0)
-        continuation.invokeOnCancellation {
-            // Handle cancellation if needed
-        }
+fun getTodayLastTime(timetable: Timetable):Int{
+
+    val todayDay = getSystemDayOfWeekInt()
+    val todayEvents = timetable.EventTable[todayDay]
+    var totalBlock = 0
+
+    for (event in todayEvents){
+        totalBlock += timetable.EventList[event-1].time_span
+    }
+    return timetable.TimeList[totalBlock]
+
+}
+fun generateLogTag(className: String): String {
+    val maxTagLength = 23 // Maximum length allowed for a log tag
+    val tagPrefix = "MyApp" // Your desired prefix for the log tag
+
+    // Remove any unwanted characters from the class name
+    val cleanClassName = className.replace("[^a-zA-Z0-9_]".toRegex(), "")
+
+    // Combine the prefix and cleaned class name
+    val tag = "$tagPrefix-${cleanClassName.substring(0, minOf(cleanClassName.length, maxTagLength - tagPrefix.length))}"
+
+    return tag
+}
+
+
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun NoScrollEffect(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+        content()
     }
 }

@@ -40,6 +40,7 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             credentialsDataStore.data.collect { userData ->
                 _credentials.value = userData
+                println(userData)
                 if (userData.isFakeLoggedIn)
                     _loginUiState.value = LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Fake)
                 else if (userData.hasCredentials)

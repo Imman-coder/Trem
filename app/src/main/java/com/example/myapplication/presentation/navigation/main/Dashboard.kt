@@ -1,14 +1,9 @@
 package com.example.myapplication.presentation.navigation.main
 
-import android.os.Bundle
-import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,19 +19,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -44,50 +41,66 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.datastore.core.DataStore
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.compose.ui.window.Dialog
+import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.AttendanceSubject
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.presentation.components.shimmerEffect
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
-import dagger.hilt.android.AndroidEntryPoint
-
-
-@AndroidEntryPoint
-class Dashboard : Fragment() {
-
-    val model: MainViewModel by viewModels()
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setContent {
-                HomeScreen(profileStore = model.getLProfileStore())
-
-            }
-        }
-    }
-}
 
 @Composable
-fun HomeScreen(profileStore: DataStore<Profile>) {
+fun HomeScreen(attendanceState: MainViewModel.DataState<Attendance>, profileState: MainViewModel.DataState<Profile>) {
 
-    val profile = profileStore.data.collectAsState(initial = Profile()).value
-    LaunchedEffect(key1 = profile) {
-        Log.d("TAG2", profile.attendance.toString())
-    }
-    Column(Modifier.padding(15.dp)) {
+    val attendance = attendanceState.data
+    val profile = profileState.data
+    val isLoading = attendanceState.dataBy == MainViewModel.DataState.DataBy.NotAvailable
+
+    Column(Modifier.padding(horizontal = 15.dp)) {
         Text(
-            text = "Hi ${profile.name}",
+            text = "Hi ${profile?.name}",
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.headlineLarge,
         )
-//        WelcomeCard()
-        AttendanceListView(profile)
+
+        Text(text = "Attendance", style = MaterialTheme.typography.headlineLarge)
+
+        var showExpandedAttendance by remember { mutableStateOf<AttendanceSubject?>(null) }
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (!isLoading) {
+                items(attendance?.subs?.size?:0) { i ->
+                    attendance?.subs?.get(i)?.let { AttendanceCard(it){showExpandedAttendance = it} }
+                }
+            }
+            else {
+                items(20) {
+                    Spacer(modifier  = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .width(150.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .shimmerEffect())
+                }
+            }
+        }
+        if(showExpandedAttendance!=null){
+            Dialog(onDismissRequest = { showExpandedAttendance=null }) {
+                Card {
+                    Column(Modifier.padding(15.dp)) {
+                        showExpandedAttendance?.let {
+                            Text(text = "Subject : ${it.name}")
+                            Text(text = "Total : ${it.conducted}")
+                            Text(text = "Present : ${it.present}")
+                            Text(text = "Absent : ${it.absent}")
+                         }
+                    }
+                }
+            }
+        }
 
     }
 }
@@ -109,36 +122,8 @@ private fun WelcomeCard() {
     }
 }
 
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun AttendanceListView(profile: Profile) {
-    Text(text = "Attendance", style = MaterialTheme.typography.headlineLarge)
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (profile.attendance.isNotEmpty()) {
-            items(profile.attendance.size) { i ->
-                AttendanceCard(profile.attendance[i])
-            }
-        }
-        else {
-            items(10) {
-                Spacer(modifier  = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .width(150.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .shimmerEffect())
-            }
-        }
-    }
-}
-
-@Composable
-private fun AttendanceCard(s: AttendanceSubject) {
+private fun AttendanceCard(s: AttendanceSubject, onClick:()->Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -146,6 +131,7 @@ private fun AttendanceCard(s: AttendanceSubject) {
             .width(150.dp)
             .clip(RoundedCornerShape(15.dp))
             .background(MaterialTheme.colorScheme.primary)
+            .clickable { onClick() }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
 
@@ -191,7 +177,6 @@ private fun AttendanceCard(s: AttendanceSubject) {
 private fun MainPreview() {
     MyApplicationTheme(darkTheme = true, dynamicColor = false) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-
             val profile = Profile(
                 name = "John Doe",
                 redgno = 101102341,
@@ -199,16 +184,13 @@ private fun MainPreview() {
                 sem = 3,
                 program = "BTech"
             )
-            LaunchedEffect(key1 = profile) {
-                Log.d("TAG2", profile.attendance.toString())
-            }
             Column(Modifier.padding(15.dp)) {
                 Text(
                     text = "Hi ${profile.name}",
                     color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.headlineLarge,
                 )
-                AttendanceListView(profile)
+//                AttendanceListView(profile)
 
             }
 

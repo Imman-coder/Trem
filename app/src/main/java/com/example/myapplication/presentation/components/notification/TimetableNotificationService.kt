@@ -8,7 +8,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.myapplication.R
-import com.example.myapplication.presentation.MainActivity2
+import com.example.myapplication.presentation.MainActivity
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -61,7 +61,7 @@ class TimetableNotificationService(private val context: Context) {
 
     fun showNotification(data: NotificationWrapper) {
 
-        val actionIntent = Intent(context, MainActivity2::class.java)
+        val actionIntent = Intent(context, MainActivity::class.java)
         actionIntent.putExtra(TIMETABLE_NOTIFICATION_RECEIVER, true)
 
         val timetablePendingIntent = PendingIntent.getActivity(

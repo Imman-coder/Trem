@@ -2,19 +2,17 @@ package com.example.myapplication.network.util
 
 
 import com.example.myapplication.domain.model.Grade
-import com.example.myapplication.domain.model.Result
+import com.example.myapplication.domain.model.Scorecard
 import com.example.myapplication.domain.model.ResultSubject
 import com.example.myapplication.domain.model.Sem
 import com.example.myapplication.domain.util.DomainMapper
 import com.example.myapplication.network.model.ResultDto
-import kotlinx.collections.immutable.PersistentCollection
-import kotlinx.collections.immutable.persistentListOf
 
-class ResultDtoMapper : DomainMapper<ResultDto, Result> {
-    override fun mapToDomainModel(model: ResultDto): Result {
+class ResultDtoMapper : DomainMapper<ResultDto, Scorecard> {
+    override fun mapToDomainModel(model: ResultDto): Scorecard {
 
 
-        return Result(
+        return Scorecard(
             cgpa = model.cgpa,
             sems = model.sems.map {  Sem(
                 sem = it.sem,
@@ -32,7 +30,7 @@ class ResultDtoMapper : DomainMapper<ResultDto, Result> {
         )
     }
 
-    override fun mapFromDomainModel(domainModel: Result): ResultDto {
+    override fun mapFromDomainModel(domainModel: Scorecard): ResultDto {
         TODO("Not yet implemented")
     }
 }

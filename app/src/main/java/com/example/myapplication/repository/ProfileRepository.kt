@@ -2,7 +2,7 @@ package com.example.myapplication.repository
 
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Profile
-import com.example.myapplication.domain.model.Result
+import com.example.myapplication.domain.model.Scorecard
 
 interface ProfileRepository {
 
@@ -10,7 +10,7 @@ interface ProfileRepository {
 
     suspend fun getAttendance(sem: Int):Attendance
 
-    suspend fun getResults():Result
+    suspend fun getResults():Scorecard
 
 
 }

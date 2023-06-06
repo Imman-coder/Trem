@@ -1,9 +1,5 @@
 package com.example.myapplication.presentation.navigation.main
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -38,7 +34,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -46,94 +41,78 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.datastore.core.DataStore
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.R
 import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.domain.model.Scorecard
 import com.example.myapplication.domain.model.Sem
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import kotlin.math.ceil
 
+@Composable
+fun ProfileScreen(profile: Profile?, scorecard: Scorecard?, openSettings: () -> Unit) {
 
-class Profile(private val openSettings: () -> Unit) :Fragment(){
+    LaunchedEffect(key1 = scorecard) {
 
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-    val model = ViewModelProvider(requireActivity())[MainViewModel::class.java]
-        
-    return ComposeView(requireContext()).apply {
-            setContent {
-                ProfileScreen(profileStore = model.profileStore)
-            }
-        }
     }
 
-    @Composable
-    fun ProfileScreen(profileStore: DataStore<Profile>) {
-
-        val profile = profileStore.data.collectAsState(initial = Profile()).value
-
-        LaunchedEffect(key1 = profile.result){
-
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Row(
+            Modifier
+                .height(50.dp)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 10.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                Modifier
-                    .height(50.dp)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 10.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
-                Spacer(modifier = Modifier.size(24.dp))
-                Text(text = "Profile",color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleLarge)
-                Icon(imageVector = Icons.Default.Settings, contentDescription = "Menu",Modifier.clickable { openSettings() },tint=MaterialTheme.colorScheme.onSurface)
-            }
-            Divider()
-            LazyColumn{
-                item {
-                    ProfileCard(profile)
-                    ResultSection(profile)
-                }
+            Spacer(modifier = Modifier.size(24.dp))
+            Text(
+                text = "Profile",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Menu",
+                Modifier.clickable { openSettings() },
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Divider()
+        LazyColumn {
+            item {
+                ProfileCard(profile, scorecard?.cgpa ?: -1f)
+                ResultSection(scorecard)
             }
         }
-
     }
+
 }
 
-
 @Composable
-private fun ResultSection(profile:Profile) {
+private fun ResultSection(scorecard: Scorecard?) {
     val expanded = remember { mutableStateOf(-1) }
     Column(Modifier.padding(15.dp)) {
         Text(text = "Results")
-            profile.result.sems.map {
-                SemCard(it, it.sem == expanded.value) {
-                    if (expanded.value != it.sem) {
-                        expanded.value = it.sem
-                    } else {
-                        expanded.value = -1
-                    }
+        scorecard?.sems?.map {
+            SemCard(it, it.sem == expanded.value) {
+                if (expanded.value != it.sem) {
+                    expanded.value = it.sem
+                } else {
+                    expanded.value = -1
                 }
-                Spacer(modifier = Modifier.padding(5.dp))
             }
+            Spacer(modifier = Modifier.padding(5.dp))
         }
+    }
 }
 
 @Composable
@@ -173,16 +152,16 @@ private fun SemCard(sem: Sem, expanded: Boolean, onClick: () -> Unit) {
                         modifier = Modifier.width(200.dp)
                     )
 
-                        Text(
-                            text = "Credit",
-                            color = MaterialTheme.colorScheme.onPrimary,
+                    Text(
+                        text = "Credit",
+                        color = MaterialTheme.colorScheme.onPrimary,
 
-                            )
-                        Text(
-                            text = "Grade",
-                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    Text(
+                        text = "Grade",
+                        color = MaterialTheme.colorScheme.onPrimary,
 
-                            )
+                        )
 
                 }
                 for (x in sem.subjects) {
@@ -233,7 +212,7 @@ inline fun Modifier.noRippleClickable(
 }
 
 @Composable
-private fun ProfileCard(profile: Profile) {
+private fun ProfileCard(profile: Profile?, cgpa: Float) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -252,9 +231,9 @@ private fun ProfileCard(profile: Profile) {
                 )
                 .size(150.dp)
         )
-        Text(text = profile.name, color = MaterialTheme.colorScheme.onPrimary)
+        Text(text = profile?.name?:"", color = MaterialTheme.colorScheme.onPrimary)
         Text(
-            text = profile.redgno.toString(),
+            text = profile?.redgno.toString()?:"",
             fontWeight = FontWeight.Light,
             color = MaterialTheme.colorScheme.onPrimary
         )
@@ -267,7 +246,7 @@ private fun ProfileCard(profile: Profile) {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = profile.program,
+                    text = profile?.program?:"",
                     fontWeight = FontWeight.Light,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -275,7 +254,7 @@ private fun ProfileCard(profile: Profile) {
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = profile.result.cgpa.toString(),
+                    text = cgpa.toString(),
                     fontWeight = FontWeight.Light,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -283,7 +262,7 @@ private fun ProfileCard(profile: Profile) {
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = profile.sem.toString(),
+                    text = profile?.sem.toString(),
                     fontWeight = FontWeight.Light,
                     color = MaterialTheme.colorScheme.onPrimary
                 )

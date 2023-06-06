@@ -3,7 +3,7 @@ package com.example.myapplication.repository
 import android.util.Log
 import com.example.myapplication.domain.model.Attendance
 import com.example.myapplication.domain.model.Profile
-import com.example.myapplication.domain.model.Result
+import com.example.myapplication.domain.model.Scorecard
 import com.example.myapplication.network.ProfileService
 import com.example.myapplication.network.exceptions.FetchException
 import com.example.myapplication.network.exceptions.LoginException
@@ -17,7 +17,7 @@ import java.net.SocketTimeoutException
 class ProfileRepository_Impl(
     private val profileService: ProfileService,
     private val profileMapper: ProfileDtoMapper,
-    private val attendenceMapper: AttendenceDtoMapper,
+    private val attendanceMapper: AttendenceDtoMapper,
     private val resultMapper: ResultDtoMapper,
 ) : ProfileRepository {
     override suspend fun Login(id: String, password: String): Profile {
@@ -37,8 +37,8 @@ class ProfileRepository_Impl(
 
             val response = profileService.login("DGI", hash.data, pass, shaPass, id)
 
-            if (response.type == FetchType.Successful && response.data != null)
-                return profileMapper.mapToDomainModel(response.data)
+            return if (response.type == FetchType.Successful && response.data != null)
+                profileMapper.mapToDomainModel(response.data)
             else
                 throw LoginException(
                     "Login Failed", "Invalid Credentials",
@@ -61,14 +61,14 @@ class ProfileRepository_Impl(
                 sem = sem.toString(),
                 studentCode = sta.usercode
             )
-            return attendenceMapper.mapToDomainModel(attendance)
+
+            return attendanceMapper.mapToDomainModel(attendance)
         }
         Log.e("Sta", sta.toString())
-        throw FetchException("Unable to fetch userStableData", "Failed to fetch Attendence")
-        return Attendance()
+        throw FetchException("Unable to fetch userStableData", "Failed to fetch Attendence",FetchException.Error.NetworkError)
     }
 
-    override suspend fun getResults(): Result {
+    override suspend fun getResults(): Scorecard {
         return resultMapper.mapToDomainModel(profileService.getResults())
     }
 }

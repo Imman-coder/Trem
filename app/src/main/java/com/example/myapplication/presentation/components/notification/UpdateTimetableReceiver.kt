@@ -6,6 +6,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.datastore.core.DataStore
 import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.domain.model.Timetable
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +20,7 @@ import javax.inject.Inject
 class UpdateTimetableReceiver:BroadcastReceiver() {
 
     @Inject
-    lateinit var profile: DataStore<Profile>
+    lateinit var timetable: DataStore<Timetable>
 
     private val TAG = "UpdateTimetableBroadcastReceiver"
 
@@ -31,7 +32,7 @@ class UpdateTimetableReceiver:BroadcastReceiver() {
 
             Log.d(TAG, "onReceive: at time $currentDate")
 
-            val timetable = profile.data.first().timetable
+            val timetable = timetable.data.first()
 
             val w = NotificationContentBuilder.buildContent(timetable)
 

@@ -7,6 +7,5 @@ data class Credentials(
     val hasCredentials: Boolean=false,
     val uid: String = "",
     val pass: String = "",
-    val loggedIn:Boolean = false,
     val isFakeLoggedIn : Boolean = false,
 )

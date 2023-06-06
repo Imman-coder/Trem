@@ -1,7 +1,7 @@
 package com.example.myapplication.network.model
 
 import com.example.myapplication.domain.model.Attendance
-import com.example.myapplication.domain.model.Result
+import com.example.myapplication.domain.model.Scorecard
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,5 +13,5 @@ data class ProfileDto (
     val program : String = "",
     val branch : String,
     val attendance: Attendance? = null,
-    val result: Result? = null
+    val scorecard: Scorecard? = null
 )

@@ -162,7 +162,9 @@ fun LoginScreen(
             Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp)
-                .noRippleClickable { showFakeLoginDialog = true })
+                .noRippleClickable { showFakeLoginDialog = true },
+            style = MaterialTheme.typography.bodyMedium
+        )
         if (showFakeLoginDialog){
             FakeLoginBox(onDismiss = { showFakeLoginDialog=false }, login = onFakeLogin)
         }
@@ -286,56 +288,6 @@ fun Preview() {
             FakeLoginBox(onDismiss = { /*TODO*/ }) {_,_,_->
             }
 //            InputDialog(onSubmit = { _, _, _ -> })
-        }
-    }
-}
-
-
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun InputDialog(onSubmit: (String, String, String) -> Unit) {
-    var course by remember { mutableStateOf("") }
-    var branch by remember { mutableStateOf("") }
-    var batch by remember { mutableStateOf("") }
-
-    Dialog(onDismissRequest = { /* Handle dismiss request here */ }) {
-        Card(modifier = Modifier.width(300.dp)) {
-            Column(Modifier.padding(16.dp)) {
-                Text(text = "Enter Course, Branch, and Batch", style = MaterialTheme.typography.headlineMedium)
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = course,
-                    onValueChange = { course = it },
-                    label = { Text("Course") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = branch,
-                    onValueChange = { branch = it },
-                    label = { Text("Branch") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = batch,
-                    onValueChange = { batch = it },
-                    label = { Text("Batch") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Button(
-                        onClick = {
-                            onSubmit(course, branch, batch)
-                        }
-                    ) {
-                        Text("Submit")
-                    }
-                }
-            }
         }
     }
 }

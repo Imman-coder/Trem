@@ -22,16 +22,9 @@ import dagger.hilt.components.SingletonComponent
 import java.util.prefs.Preferences
 import javax.inject.Singleton
 
-//val Context.profileStore by dataStore("profile.json", ProfileSerializer)
-//val Context.credentialsStore by dataStore("credentials.json", CredentialsSerializer)
-
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule{
-
-    private val Context.profileStore :DataStore<Profile> by dataStore("profile.json", ProfileSerializer)
-    private val Context.credentialsStore: DataStore<Credentials> by dataStore("credentials.json", CredentialsSerializer)
-    private val Context.preferencesStore: DataStore<AppPreferences> by dataStore("preferences.json", AppPreferencesSerializer)
 
 
     @Singleton
@@ -65,23 +58,6 @@ object AppModule{
         return TimetableDtoMapper()
     }
 
-    @Singleton
-    @Provides
-    fun provideProfileStore(@ApplicationContext context: Context):DataStore<Profile> {
-        return context.profileStore;
-    }
-
-    @Singleton
-    @Provides
-    fun provideCredentials(@ApplicationContext context: Context):DataStore<Credentials> {
-        return context.credentialsStore;
-    }
-
-    @Singleton
-    @Provides
-    fun provideAppPreferences(@ApplicationContext context: Context):DataStore<AppPreferences> {
-        return context.preferencesStore;
-    }
 
 
 

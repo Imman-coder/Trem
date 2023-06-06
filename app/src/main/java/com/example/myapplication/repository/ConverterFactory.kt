@@ -1,7 +1,5 @@
 package com.example.myapplication.repository
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.network.model.AttendanceDto
 import com.example.myapplication.network.model.ProfileDto
@@ -13,7 +11,6 @@ import com.example.myapplication.network.response.FetchType
 import com.example.myapplication.network.response.HashCarrier
 import com.example.myapplication.network.response.ProfileCarrier
 import com.example.myapplication.network.response.UserSta
-import com.example.myapplication.presentation.navigation.login.LoginViewModel
 import com.google.gson.Gson
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.parser.PdfTextExtractor
@@ -28,7 +25,6 @@ import java.nio.file.StandardOpenOption
 import java.util.Arrays
 import java.util.Objects
 import java.util.regex.Pattern
-import kotlin.io.path.deleteExisting
 import kotlin.io.path.deleteIfExists
 
 class ConverterFactory : Converter.Factory() {
@@ -45,11 +41,9 @@ class ConverterFactory : Converter.Factory() {
         } else if (UserSta::class.java == type) {
             return parseLoginStatus()
         } else if (AttendanceDto::class.java == type) {
-            return parseAttendence()
+            return parseAttendance()
         } else if (ResultDto::class.java == type) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                return parseResult()
-            }
+            return parseResult()
         }else if(TimetableDto::class.java==type){
             return parseTimetable()
         }
@@ -66,7 +60,6 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     private fun parseResult(): Converter<ResponseBody, ResultDto> {
         return Converter { value: ResponseBody ->
 
@@ -157,10 +150,9 @@ class ConverterFactory : Converter.Factory() {
         }
     }
 
-    private fun parseAttendence(): Converter<ResponseBody, AttendanceDto> {
+    private fun parseAttendance(): Converter<ResponseBody, AttendanceDto> {
         return Converter { value1: ResponseBody ->
             val s = value1.string()
-            println(s)
             val gson = Gson()
             gson.fromJson(s, AttendanceDto::class.java)
         }

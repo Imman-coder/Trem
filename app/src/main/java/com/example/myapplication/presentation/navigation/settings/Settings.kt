@@ -65,10 +65,10 @@ fun SettingsMain(viewModel: SettingsViewModel, killMe: () -> Unit = {}, onBackCl
 
             Row(
                 Modifier
+                    .fillMaxWidth()
                     .height(50.dp)
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 10.dp)
-                    .fillMaxWidth(),
+                    .padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -147,8 +147,7 @@ fun SettingsMain(viewModel: SettingsViewModel, killMe: () -> Unit = {}, onBackCl
                     CoroutineScope(IO).launch {
                         viewModel.logOut()
                     }
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                    killMe()
+                    onBackClick()
                 }) {
                     Text(text = "Logout")
                 }

@@ -1,11 +1,9 @@
 package com.example.myapplication.domain.model
 
-import kotlinx.collections.immutable.PersistentCollection
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Result(
+data class Scorecard(
     val cgpa:Float = -1f,
     val sems :List<Sem> = listOf()
 )

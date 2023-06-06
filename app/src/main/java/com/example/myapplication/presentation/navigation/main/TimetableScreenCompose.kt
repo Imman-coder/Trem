@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Resources
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +34,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,26 +50,21 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.domain.model.Timetable
 import com.example.myapplication.presentation.components.shimmerEffect
-import com.example.myapplication.presentation.timeToInt
+import com.example.myapplication.presentation.getSystemDayOfWeekInt
+import com.example.myapplication.presentation.getSystemTimeInt
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
+fun Tts(timetableState: MainViewModel.DataState<Timetable>, only: Boolean = false, back: () -> Unit) {
+
+    val timetable = timetableState.data
+    val isLoading = timetableState.dataState == MainViewModel.DataState.DataState.Fetching || timetableState.dataBy == MainViewModel.DataState.DataBy.NotAvailable
 
     val context = LocalContext.current
-    val timetable = model.getLProfileStore().data.collectAsState(initial = Profile()).value.timetable
-
-    LaunchedEffect(key1 = timetable){
-        Log.d("Timetable",timetable.toString())
-    }
 
     var currentTime by remember { mutableStateOf(0) }
     var selectedDay by remember { mutableStateOf(-1) }
@@ -80,19 +72,15 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
 
     fun updateTime() {
         println("Updated Time")
-        val sdf = SimpleDateFormat("hh:mma")
-        val currentDate = sdf.format(Date())
-        currentTime = timeToInt(currentDate)
 
-        val calendar = Calendar.getInstance()
-        val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 2
-        todayDay = dayOfWeek
+        currentTime = getSystemTimeInt()
 
+        todayDay = getSystemDayOfWeekInt()
 
         if (selectedDay == -1) {
-            selectedDay = if(todayDay in 0..5) todayDay
+            selectedDay = if (todayDay in 0..5) todayDay
             else 0
-            Log.d("today",selectedDay.toString())
+            Log.d("today", selectedDay.toString())
         }
     }
 
@@ -105,6 +93,7 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
             addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
         }
+
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 updateTime()
@@ -126,7 +115,7 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
     }
 
     var kSize by remember { mutableStateOf(false) }
-    val cSize : Float by animateFloatAsState(targetValue = if(kSize)1f else .8f)
+    val cSize: Float by animateFloatAsState(targetValue = if (kSize) 1f else .8f)
 
 
     Column {
@@ -139,9 +128,22 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(imageVector = if (!only) Icons.Default.ArrowBack else Icons.Default.Settings, contentDescription = "Back",tint=MaterialTheme.colorScheme.onSurface, modifier = Modifier.clickable { back() })
-            Text(text = "Timetable",color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleLarge)
-            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu",Modifier.clickable { kSize = !kSize},tint=MaterialTheme.colorScheme.onSurface)
+            Icon(
+                imageVector = if (!only) Icons.Default.ArrowBack else Icons.Default.Settings,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.clickable { back() })
+            Text(
+                text = "Timetable",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Menu",
+                Modifier.clickable { kSize = !kSize },
+                tint = MaterialTheme.colorScheme.onSurface
+            )
         }
         Divider()
         Row {
@@ -152,23 +154,29 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
 //            ) { idx ->
 //                selectedDay = idx
 //            }
-                if (timetable.EventList.isNotEmpty() && selectedDay in 0..6) {
-                    TableListViewer(
-                        timetable.EventList,
-                        timetable.EventTable[selectedDay],
-                        timetable.TimeList,
-                        currentTime
-                    )
-                }
-                else{
-                    LazyColumn {
-                        items(7){
+                if (!isLoading && selectedDay > -1 && selectedDay < 7 ) {
+                    timetable?.EventList?.let {
+                        TableListViewer(
+                            it,
+                            timetable.EventTable[selectedDay],
+                            timetable.TimeList,
+                            currentTime
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        Modifier
+                            .padding(horizontal = 10.dp)
+                    ) {
+                        items(7) {
                             Row {
                                 Row(Modifier.width(80.dp)) {
-                                    Spacer(modifier = Modifier
-                                        .width(30.dp)
-                                        .height(8.dp)
-                                        .shimmerEffect())
+                                    Spacer(
+                                        modifier = Modifier
+                                            .width(30.dp)
+                                            .height(8.dp)
+                                            .shimmerEffect()
+                                    )
                                 }
                                 Spacer(
                                     modifier = Modifier
@@ -191,7 +199,7 @@ fun Tts(model: MainViewModel, only:Boolean=true, back:()->Unit) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val starto : Float by animateFloatAsState(targetValue = ((selectedDay) * 75).toPx())
+                val starto: Float by animateFloatAsState(targetValue = ((selectedDay) * 75).toPx())
                 val bg = MaterialTheme.colorScheme.background
                 val dot = MaterialTheme.colorScheme.tertiary
 
@@ -282,4 +290,4 @@ private fun Preview() {
     }
 }
 
-fun Int.toPx():Float = (this * Resources.getSystem().displayMetrics.density)
+fun Int.toPx(): Float = (this * Resources.getSystem().displayMetrics.density)
