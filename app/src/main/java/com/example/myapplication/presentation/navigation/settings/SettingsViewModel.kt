@@ -2,6 +2,7 @@ package com.example.myapplication.presentation.navigation.settings
 
 import androidx.datastore.core.DataStore
 import androidx.lifecycle.ViewModel
+import com.example.myapplication.BaseApplication
 import com.example.myapplication.domain.model.AppPreferences
 import com.example.myapplication.domain.model.Credentials
 import com.example.myapplication.domain.model.Profile
@@ -14,6 +15,7 @@ class SettingsViewModel
         private val appPreferences: DataStore<AppPreferences>,
         private val credentialStore: DataStore<Credentials>,
         private val profileStore: DataStore<Profile>,
+        private val app:BaseApplication
     ): ViewModel() {
 
 
@@ -36,5 +38,6 @@ class SettingsViewModel
     suspend fun logOut() {
         credentialStore.updateData { Credentials() }
         profileStore.updateData { Profile() }
+        app.isLoggedIn=false
     }
 }

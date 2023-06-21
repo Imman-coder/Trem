@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.myapplication.presentation.navigation.main.DataState
 import com.example.myapplication.presentation.navigation.main.FakeMainViewModel
 import com.example.myapplication.presentation.navigation.main.MainViewModel
 import com.example.myapplication.presentation.navigation.main.Tts
@@ -54,7 +55,7 @@ class FakeMainActivity : AppCompatActivity() {
 
                     LaunchedEffect(key1 = timetableState) {
                         isLoading =
-                            timetableState.dataState == MainViewModel.DataState.DataState.Fetching
+                            timetableState.status == DataState.Status.Fetching
                     }
 
 
@@ -76,7 +77,7 @@ class FakeMainActivity : AppCompatActivity() {
                             .pullRefresh(pullRefreshState)
                             .fillMaxSize()
                     ) {
-                        Tts(timetableState,true) {
+                        Tts(timetableState,only = true) {
                             startActivity(
                                 Intent(
                                     this@FakeMainActivity,

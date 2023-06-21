@@ -22,10 +22,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,11 +60,19 @@ import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 import java.util.Locale
 
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun Tts(timetableState: MainViewModel.DataState<Timetable>, only: Boolean = false, back: () -> Unit) {
+fun Tts(
+    timetableState: DataState<Timetable>,
+    modifier: Modifier = Modifier,
+    only: Boolean = false,
+    refresh: () -> Unit = {},
+    back: () -> Unit
+) {
 
     val timetable = timetableState.data
-    val isLoading = timetableState.dataState == MainViewModel.DataState.DataState.Fetching || timetableState.dataBy == MainViewModel.DataState.DataBy.NotAvailable
+    val isLoading =
+        timetableState.status == DataState.Status.Fetching || timetableState.dataBy == DataState.DataBy.NotAvailable
 
     val context = LocalContext.current
 
@@ -118,7 +128,25 @@ fun Tts(timetableState: MainViewModel.DataState<Timetable>, only: Boolean = fals
     val cSize: Float by animateFloatAsState(targetValue = if (kSize) 1f else .8f)
 
 
-    Column {
+    var isTimetableLoading by remember { mutableStateOf(false) }
+
+
+    val timetablePullRefreshState = rememberPullRefreshState(
+        refreshing = isTimetableLoading,
+        onRefresh = {
+            refresh()
+        }
+    )
+
+    LaunchedEffect(
+        key1 = timetableState,
+        block = {
+            isTimetableLoading =
+                timetableState.status == DataState.Status.Fetching
+        })
+
+
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.surface)) {
         Row(
             Modifier
                 .height(50.dp)
@@ -154,7 +182,7 @@ fun Tts(timetableState: MainViewModel.DataState<Timetable>, only: Boolean = fals
 //            ) { idx ->
 //                selectedDay = idx
 //            }
-                if (!isLoading && selectedDay > -1 && selectedDay < 7 ) {
+                if (!isLoading && selectedDay > -1 && selectedDay < 7) {
                     timetable?.EventList?.let {
                         TableListViewer(
                             it,
@@ -274,8 +302,10 @@ fun Tts(timetableState: MainViewModel.DataState<Timetable>, only: Boolean = fals
                         Spacer(modifier = Modifier.size(25.dp))
                     }
                 }
+                
             }
         }
+
     }
 
 }

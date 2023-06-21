@@ -5,6 +5,7 @@ class FetchException(message:String, val toastMessage:String,val error: Error): 
 
     sealed class Error{
         object NetworkError : Error()
+        object NoInternet : Error()
         object NotLoggedIn : Error()
     }
 

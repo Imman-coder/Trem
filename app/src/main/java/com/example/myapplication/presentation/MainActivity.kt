@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,10 +68,12 @@ import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.presentation.components.NavBarItem
 import com.example.myapplication.presentation.components.notification.NotificationContentBuilder
 import com.example.myapplication.presentation.components.notification.TimetableNotificationService
+import com.example.myapplication.presentation.navigation.main.DataState
 import com.example.myapplication.presentation.navigation.main.HomeScreen
 import com.example.myapplication.presentation.navigation.main.MainViewModel
 import com.example.myapplication.presentation.navigation.main.ProfileScreen
 import com.example.myapplication.presentation.navigation.main.Tts
+import com.example.myapplication.presentation.navigation.main.noRippleClickable
 import com.example.myapplication.presentation.navigation.settings.SettingsMain
 import com.example.myapplication.presentation.navigation.settings.SettingsViewModel
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
@@ -209,7 +210,6 @@ class MainActivity : AppCompatActivity() {
         val attendanceState by viewModel.attendanceState.collectAsState()
 
         var isAttendanceLoading by remember { mutableStateOf(false) }
-        var isTimetableLoading by remember { mutableStateOf(false) }
         var isScorecardLoading by remember { mutableStateOf(false) }
 
 
@@ -220,17 +220,6 @@ class MainActivity : AppCompatActivity() {
                     viewModel.fetchAttendance()
                     showToast("Attendance Refreshed!")
                 }
-            }
-        )
-
-        val timetablePullRefreshState = rememberPullRefreshState(
-            refreshing = isTimetableLoading,
-            onRefresh = {
-                CoroutineScope(Dispatchers.IO).launch {
-                    viewModel.fetchTimetable()
-                    showToast("Timetable Refreshed!")
-                }
-
             }
         )
 
@@ -248,21 +237,15 @@ class MainActivity : AppCompatActivity() {
             key1 = attendanceState,
             block = {
                 isAttendanceLoading =
-                    attendanceState.dataState == MainViewModel.DataState.DataState.Fetching
+                    attendanceState.status == DataState.Status.Fetching
             })
 
-        LaunchedEffect(
-            key1 = timetableState,
-            block = {
-                isTimetableLoading =
-                    timetableState.dataState == MainViewModel.DataState.DataState.Fetching
-            })
 
         LaunchedEffect(
             key1 = scorecardState,
             block = {
                 isScorecardLoading =
-                    scorecardState.dataState == MainViewModel.DataState.DataState.Fetching
+                    scorecardState.status == DataState.Status.Fetching
             })
 
 
@@ -358,17 +341,22 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     1 -> {
-                        Box(modifier = Modifier.pullRefresh(timetablePullRefreshState)) {
-                            Tts(
-                                timetableState
-                            ) {
-                                cs.launch { pagerState.animateScrollToPage(0) }
+                        Tts(
+                            timetableState,
+                            refresh = {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        viewModel.fetchTimetable()
+                                        showToast("Timetable Refreshed!")
+                                    } catch (e: FetchException) {
+                                        showToast(e.toastMessage)
+                                    } catch (e: LoginException) {
+                                        showToast(e.toastMessage)
+                                    }
+                                }
                             }
-                            PullRefreshIndicator(
-                                isTimetableLoading,
-                                timetablePullRefreshState,
-                                Modifier.align(Alignment.TopCenter)
-                            )
+                        ) {
+                            cs.launch { pagerState.animateScrollToPage(0) }
                         }
                     }
                 }
@@ -410,7 +398,7 @@ class MainActivity : AppCompatActivity() {
                         .clip(RoundedCornerShape(10.dp))
                         .background(bg.copy(alpha = .2f))
                         .padding(horizontal = 14.dp, vertical = 8.dp)
-                        .clickable { onItemClick(it) }
+                        .noRippleClickable { onItemClick(it) }
                         .animateContentSize(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center

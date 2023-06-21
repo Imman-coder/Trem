@@ -12,15 +12,15 @@ class TimetableDtoMapper:DomainMapper<TimetableDto,Timetable> {
         return Timetable(
             EventTable = model.EventTable,
             TimeList = model.TimeList,
-            EventList = model.EventList.map {
+            EventList = model.EventList.map { event ->
                 Event(
-                    it.value.time_span,
-                    it.value.subjects.map {
+                    event.value.time_span,
+                    event.value.subjects.map {
                                           Subject(it.subject,
                                           it.subject_code,
                                           it.teacher)
                     },
-                    getClassType(it.value.class_type)
+                    getClassType(event.value.class_type)
                 )
             }
         )

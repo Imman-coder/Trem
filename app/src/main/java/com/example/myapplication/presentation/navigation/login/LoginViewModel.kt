@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.BaseApplication
 import com.example.myapplication.domain.model.Credentials
 import com.example.myapplication.domain.model.Profile
+import com.example.myapplication.network.exceptions.FetchException
 import com.example.myapplication.network.exceptions.LoginException
+import com.example.myapplication.presentation.isOnline
 import com.example.myapplication.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +59,7 @@ class LoginViewModel @Inject constructor(
             _loginUiState.value = LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Not ,isLogging = true)
             credentialsDataStore.updateData { Credentials(isFakeLoggedIn = true) }
             profileDataStore.updateData { Profile(sem = sem, program = program, branch = branch) }
+            app.isLoggedIn = true
             _loginUiState.value =
                 LoginUiState(isLogging = false, loggedInAs = LoginUiState.LoggedInUser.Fake)
 
@@ -67,17 +70,23 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
 
-            _loginUiState.value = LoginUiState(isLogging = true,loggedInAs = LoginUiState.LoggedInUser.Not)
-            try {
-                val p = profileRepository.Login(username, password)
-                profileDataStore.updateData { p }
-                app.isLoggedIn = true
-                if (save) saveCredentials(username, password)
-                _loginUiState.value = LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Original)
-            } catch (e: LoginException) {
-                e.printStackTrace()
+            if(isOnline(app)) {
                 _loginUiState.value =
-                    LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Not ,error = if (e.error == LoginException.Error.InvalidCredentials) LoginUiState.Error.InvalidCredentials else LoginUiState.Error.NetworkError)
+                    LoginUiState(isLogging = true, loggedInAs = LoginUiState.LoggedInUser.Not)
+                try {
+                    val p = profileRepository.Login(username, password)
+                    profileDataStore.updateData { p }
+                    app.isLoggedIn = true
+                    if (save) saveCredentials(username, password)
+                    _loginUiState.value =
+                        LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Original)
+                } catch (e: LoginException) {
+                    e.printStackTrace()
+                    _loginUiState.value =
+                        LoginUiState(loggedInAs = LoginUiState.LoggedInUser.Not, error = e)
+                }
+            } else{
+                _loginUiState.value = LoginUiState(error = LoginException("No Internet Connection", error = LoginException.Error.NoInternet))
             }
 
         }
@@ -98,13 +107,9 @@ class LoginViewModel @Inject constructor(
 
     data class LoginUiState(
         val isLogging: Boolean = false,
-        val error: Error? = null,
+        val error: LoginException? = null,
         val loggedInAs: LoggedInUser? = null,
     ) {
-        sealed class Error {
-            object NetworkError : Error()
-            object InvalidCredentials : Error()
-        }
 
         enum class LoggedInUser {
             Original, Fake, Not

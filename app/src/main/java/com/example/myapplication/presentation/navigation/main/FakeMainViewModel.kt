@@ -18,13 +18,13 @@ class FakeMainViewModel @Inject constructor(
     private val credentialsDataStore: DataStore<Credentials>,
     private val timetableDataStore: DataStore<Timetable>,
 
-    private val dataRepository: DataRepository,
+    private val dataRepository: DataRepository
 ) : ViewModel() {
 
-    private val TAG = generateLogTag(FakeMainViewModel::class.java.simpleName)
+    private val TAG = generateLogTag(this::class.java.simpleName)
 
 
-    private val _timetableState = MutableStateFlow(MainViewModel.DataState<Timetable>())
+    private val _timetableState = MutableStateFlow(DataState<Timetable>())
     val timetableState = _timetableState.asStateFlow()
 
     private val _hasCredentials = MutableStateFlow(true)
@@ -44,11 +44,13 @@ class FakeMainViewModel @Inject constructor(
         viewModelScope.launch {
             timetableDataStore.data.collect { timetable ->
                 if (timetable != Timetable()) {
-                    _timetableState.value = MainViewModel.DataState(
-                        dataBy = MainViewModel.DataState.DataBy.Cache,
-                        MainViewModel.DataState.DataState.Idle,
+                    _timetableState.value = DataState(
+                        dataBy = DataState.DataBy.Cache,
+                        DataState.Status.Idle,
                         timetable
                     )
+                }else{
+                    fetchTimetable()
                 }
             }
         }
@@ -58,14 +60,14 @@ class FakeMainViewModel @Inject constructor(
     suspend fun fetchTimetable() {
         try {
             _timetableState.value =
-                _timetableState.value.copy(dataState = MainViewModel.DataState.DataState.Fetching)
+                _timetableState.value.copy(status = DataState.Status.Fetching)
             val timetable = dataRepository.getTable()
             updateTimetable(timetable = timetable)
         } catch (e: Exception) {
             e.printStackTrace()
         }
         _timetableState.value = _timetableState.value.copy(
-            dataState = MainViewModel.DataState.DataState.Idle
+            status = DataState.Status.Idle
         )
     }
 
@@ -77,7 +79,7 @@ class FakeMainViewModel @Inject constructor(
                 timetable
             }
             _timetableState.value = _timetableState.value.copy(
-                dataBy = MainViewModel.DataState.DataBy.Network
+                dataBy = DataState.DataBy.Network
             )
         }
     }

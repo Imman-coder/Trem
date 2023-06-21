@@ -10,8 +10,10 @@ import com.example.myapplication.domain.model.Credentials
 import com.example.myapplication.domain.model.Profile
 import com.example.myapplication.domain.model.Scorecard
 import com.example.myapplication.domain.model.Timetable
+import com.example.myapplication.network.exceptions.FetchException
 import com.example.myapplication.network.exceptions.LoginException
 import com.example.myapplication.presentation.generateLogTag
+import com.example.myapplication.presentation.isOnline
 import com.example.myapplication.repository.DataRepository
 import com.example.myapplication.repository.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +36,7 @@ class MainViewModel @Inject constructor(
     val app: BaseApplication
 ) : ViewModel() {
 
-    private val TAG = generateLogTag(MainViewModel::class.java.simpleName)
+    private val TAG = generateLogTag(this::class.java.simpleName)
 
 
     private val _credentials = MutableStateFlow<Credentials?>(null)
@@ -56,15 +58,16 @@ class MainViewModel @Inject constructor(
     val hasCredentials = _hasCredentials.asStateFlow()
 
     init {
-        loadCredentials()
+        initValues()
     }
 
-    private fun loadCredentials() {
+    private fun initValues() {
         viewModelScope.launch {
             println("loading values")
             credentialsDataStore.data.collect { userData ->
                 _credentials.value = userData
-                _hasCredentials.value = !((!userData.hasCredentials) || (userData.isFakeLoggedIn))
+                _hasCredentials.value =
+                    !((!userData.hasCredentials) || (userData.isFakeLoggedIn)) || app.isLoggedIn
             }
         }
         viewModelScope.launch {
@@ -74,7 +77,7 @@ class MainViewModel @Inject constructor(
                     _profileState.value =
                         DataState(
                             dataBy = DataState.DataBy.Cache,
-                            DataState.DataState.Idle,
+                            DataState.Status.Idle,
                             profile
                         )
                 }
@@ -87,9 +90,11 @@ class MainViewModel @Inject constructor(
                     _attendanceState.value =
                         DataState(
                             dataBy = DataState.DataBy.Cache,
-                            DataState.DataState.Idle,
+                            DataState.Status.Idle,
                             attendance
                         )
+                } else {
+                    fetchAttendance()
                 }
             }
         }
@@ -100,9 +105,11 @@ class MainViewModel @Inject constructor(
                     _scorecardState.value =
                         DataState(
                             dataBy = DataState.DataBy.Cache,
-                            DataState.DataState.Idle,
+                            DataState.Status.Idle,
                             scorecard
                         )
+                } else {
+                    fetchResult()
                 }
             }
         }
@@ -112,9 +119,11 @@ class MainViewModel @Inject constructor(
                 if (timetable != Timetable()) {
                     _timetableState.value = DataState(
                         dataBy = DataState.DataBy.Cache,
-                        DataState.DataState.Idle,
+                        DataState.Status.Idle,
                         timetable
                     )
+                } else {
+                    fetchTimetable()
                 }
             }
         }
@@ -123,7 +132,7 @@ class MainViewModel @Inject constructor(
     suspend fun login() {
         if (!app.isLoggedIn) {
             _profileState.value =
-                _profileState.value.copy(dataState = DataState.DataState.Fetching)
+                _profileState.value.copy(status = DataState.Status.Fetching)
             try {
                 val p = _credentials.value?.let { profileRepository.Login(it.uid, it.pass) }
                 if (p != null) {
@@ -135,42 +144,54 @@ class MainViewModel @Inject constructor(
                 app.isLoggedIn = true
             } catch (e: LoginException) {
                 e.printStackTrace()
+                throw e
             }
             _profileState.value = _profileState.value.copy(
-                dataState = DataState.DataState.Idle,
+                status = DataState.Status.Idle,
             )
         }
     }
 
 
     suspend fun fetchResult() {
-        _scorecardState.value = _scorecardState.value.copy(
-            dataState = DataState.DataState.Fetching,
-        )
-        if (app.isLoggedIn) {
-            Log.d(TAG, "fetchResult: started")
-            try {
-                val result = profileRepository.getResults()
-                Log.d(TAG, "fetchResult: fetched")
-                updateResult(scorecard = result)
-                Log.d("Application", "onCreate: result = $result")
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        } else {
-            var k = 0
-            while (k++ < 6 && !app.isLoggedIn) {
-                login()
-            }
+        if (isOnline(app)) {
+            _scorecardState.value = _scorecardState.value.copy(
+                status = DataState.Status.Fetching,
+            )
             if (app.isLoggedIn) {
-                fetchResult()
+                Log.d(TAG, "fetchResult: started")
+                try {
+                    val result = profileRepository.getResults()
+                    Log.d(TAG, "fetchResult: fetched")
+                    updateResult(scorecard = result)
+                    Log.d("Application", "onCreate: result = $result")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    throw e
+                }
             } else {
-                Log.d(TAG, "fetchAttendance: Login Failed")
+                var k = 0
+                while (k++ < 6 && !app.isLoggedIn) {
+                    login()
+                }
+                if (app.isLoggedIn) {
+                    fetchResult()
+                } else {
+                    Log.d(TAG, "fetchAttendance: Login Failed")
+                    throw LoginException("Not Logged In","Failed To Login",LoginException.Error.InvalidCredentials)
+
+                }
             }
+            _scorecardState.value = _scorecardState.value.copy(
+                status = DataState.Status.Idle,
+            )
+        } else {
+            throw FetchException(
+                "Network Error",
+                "No Internet Available",
+                FetchException.Error.NoInternet
+            )
         }
-        _scorecardState.value = _scorecardState.value.copy(
-            dataState = DataState.DataState.Idle,
-        )
     }
 
     private suspend fun updateResult(scorecard: Scorecard) {
@@ -188,37 +209,47 @@ class MainViewModel @Inject constructor(
 
 
     suspend fun fetchAttendance() {
-        _attendanceState.value = _attendanceState.value.copy(
-            dataState = DataState.DataState.Fetching,
-        )
-        if (app.isLoggedIn) {
-            try {
-                val attendance = profileState.value.data?.let {
-                    profileRepository.getAttendance(it.sem)
-                }
-                if (attendance != null) {
-                    updateAttendance(attendance = attendance)
-                    _attendanceState.value = _attendanceState.value.copy(
-                        data = attendance,
-                    )
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        } else {
-            var k = 0
-            while (k++ < 6 && !app.isLoggedIn) {
-                login()
-            }
+        if (isOnline(app)) {
+            _attendanceState.value = _attendanceState.value.copy(
+                status = DataState.Status.Fetching,
+            )
             if (app.isLoggedIn) {
-                fetchAttendance()
+                try {
+                    val attendance = profileState.value.data?.let {
+                        profileRepository.getAttendance(it.sem)
+                    }
+                    if (attendance != null) {
+                        updateAttendance(attendance = attendance)
+                        _attendanceState.value = _attendanceState.value.copy(
+                            data = attendance,
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    throw e
+                }
             } else {
-                Log.d(TAG, "fetchAttendance: Login Failed")
+                var k = 0
+                while (k++ < 6 && !app.isLoggedIn) {
+                    login()
+                }
+                if (app.isLoggedIn) {
+                    fetchAttendance()
+                } else {
+                    Log.d(TAG, "fetchAttendance: Login Failed")
+                    throw LoginException("Not Logged In","Failed To Login",LoginException.Error.InvalidCredentials)
+                }
             }
+            _attendanceState.value = _attendanceState.value.copy(
+                status = DataState.Status.Idle,
+            )
+        } else {
+            throw FetchException(
+                "Network Error",
+                "No Internet Available",
+                FetchException.Error.NoInternet
+            )
         }
-        _attendanceState.value = _attendanceState.value.copy(
-            dataState = DataState.DataState.Idle,
-        )
     }
 
     private suspend fun updateAttendance(attendance: Attendance) {
@@ -235,21 +266,34 @@ class MainViewModel @Inject constructor(
     }
 
 
-    suspend fun fetchTimetable() {
-        _timetableState.value = _timetableState.value.copy(
-            dataState = DataState.DataState.Fetching,
-        )
-        try {
-            Log.d(TAG, "fetchTimetable: Fetching Timetable ")
-            val timetable = dataRepository.getTable()
-            updateTimetable(timetable = timetable)
-        } catch (e: Exception) {
-            e.printStackTrace()
+    suspend fun fetchTimetable(supressStatus:Boolean=false) {
+        if(!supressStatus)
+            _timetableState.value = _timetableState.value.copy(
+                status = DataState.Status.Fetching,
+            )
+        if (isOnline(app)) {
+            try {
+                Log.d(TAG, "fetchTimetable: Fetching Timetable ")
+                val timetable = dataRepository.getTable()
+                updateTimetable(timetable = timetable)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                throw e
 
+            }
+            _timetableState.value = _timetableState.value.copy(
+                status = DataState.Status.Idle,
+            )
+        } else {
+            _timetableState.value = _timetableState.value.copy(
+                status = DataState.Status.Idle,
+            )
+            throw FetchException(
+                "Network Error",
+                "No Internet Available",
+                FetchException.Error.NoInternet
+            )
         }
-        _timetableState.value = _timetableState.value.copy(
-            dataState = DataState.DataState.Idle,
-        )
     }
 
     private suspend fun updateTimetable(timetable: Timetable) {
@@ -265,22 +309,23 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    data class DataState<T>(
-        val dataBy: DataBy = DataBy.NotAvailable,
-        val dataState: DataState = DataState.Idle,
-        val data: T? = null
-    ) {
-        sealed class DataBy {
-            object Cache : DataBy()
-            object Network : DataBy()
-            object NotAvailable : DataBy()
-        }
 
-        sealed class DataState {
-            object Fetching : DataState()
-            object Idle : DataState()
-        }
+}
 
+data class DataState<T>(
+    val dataBy: DataBy = DataBy.NotAvailable,
+    val status: Status = Status.Idle,
+    val data: T? = null
+) {
+    sealed class DataBy {
+        object Cache : DataBy()
+        object Network : DataBy()
+        object NotAvailable : DataBy()
+    }
+
+    sealed class Status {
+        object Fetching : Status()
+        object Idle : Status()
     }
 
 }

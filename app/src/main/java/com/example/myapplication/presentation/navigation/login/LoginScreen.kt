@@ -59,10 +59,10 @@ fun LoginScreen(
     onLoginClicked: (String, String, Boolean) -> Unit,
     onFakeLogin: (Int,String,String)->Unit
 ) {
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("2101229079") }
     var password by remember { mutableStateOf("") }
     var isValid by remember { mutableStateOf(false) }
-    var saveCredentials by remember { mutableStateOf(false) }
+    var saveCredentials by remember { mutableStateOf(true) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var showFakeLoginDialog by remember { mutableStateOf(false) }
 

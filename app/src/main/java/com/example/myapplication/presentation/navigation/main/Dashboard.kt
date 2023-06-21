@@ -49,11 +49,11 @@ import com.example.myapplication.presentation.components.shimmerEffect
 import com.example.myapplication.presentation.ui.theme.MyApplicationTheme
 
 @Composable
-fun HomeScreen(attendanceState: MainViewModel.DataState<Attendance>, profileState: MainViewModel.DataState<Profile>) {
+fun HomeScreen(attendanceState: DataState<Attendance>, profileState: DataState<Profile>) {
 
     val attendance = attendanceState.data
     val profile = profileState.data
-    val isLoading = attendanceState.dataBy == MainViewModel.DataState.DataBy.NotAvailable
+    val isLoading = attendanceState.dataBy == DataState.DataBy.NotAvailable
 
     Column(Modifier.padding(horizontal = 15.dp)) {
         Text(

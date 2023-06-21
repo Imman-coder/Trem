@@ -1,17 +1,22 @@
 package com.example.myapplication.network.model
 
+import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class TimetableDto(
+    @SerializedName("EventTable")
     val EventTable: List<List<Int>>,
+    @SerializedName("TimeList")
     val TimeList: List<Int>,
+    @SerializedName("EventList")
     val EventList: Map<String, EventDto>
 )
 
 @Serializable
 data class EventDto(
     val time_span: Int,
+    @SerializedName("subjects")
     val subjects: List<SubjectDto>,
     val class_type: Int
 )

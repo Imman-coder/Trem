@@ -20,5 +20,25 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.example.myapplication.domain.model.* {  }
 -keep class com.example.myapplication.network.model.*
+-keep class com.example.myapplication.domain.model.*
+
+
+# Gson rules
+-keepattributes Signature
+-keep class com.google.gson.examples.android.model.** { <fields>; }
+-keepclassmembers,allowobfuscation class * {
+  @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+
+
+# Retrofit rules
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+-dontobfuscate
+
