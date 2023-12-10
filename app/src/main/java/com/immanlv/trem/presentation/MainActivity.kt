@@ -146,9 +146,11 @@ class MainActivity : ComponentActivity() {
                         val context = LocalContext.current
 
 
+                        // Check if user Login status changes
                         LaunchedEffect(key1 = loggedIn) {
                             if (loggedIn) {
                                 scope.launch {
+                                    Toast.makeText(context, "Logged In", Toast.LENGTH_SHORT).show()
                                     navController.navigate(Screen.MainNavGraph.route) {
                                         popUpTo(Screen.AuthNavGraph.route) {
                                             inclusive = true
@@ -157,7 +159,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             } else {
                                 scope.launch {
-                                    Toast.makeText(context, "Logged In", Toast.LENGTH_SHORT).show()
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(Screen.MainNavGraph.route) {
                                             inclusive = true
@@ -347,15 +348,10 @@ fun NavRail(navController: NavController) {
                         )
                     },
                     icon = {
-                        Icon(
-                            item.icon,
-                            contentDescription = item.label,
-                        )
+                        Icon(item.icon, contentDescription = item.label)
                     },
                     label = {
-                        Text(
-                            text = item.label,
-                        )
+                        Text(text = item.label)
                     })
             }
             NavigationRailItem(selected = currentDestination?.route == Screen.TimetableBuilder.route,
@@ -365,15 +361,10 @@ fun NavRail(navController: NavController) {
                     )
                 },
                 icon = {
-                    Icon(
-                        Icons.Outlined.TableChart,
-                        contentDescription = "Builder",
-                    )
+                    Icon(Icons.Outlined.TableChart, contentDescription = "Builder")
                 },
                 label = {
-                    Text(
-                        text = "Builder",
-                    )
+                    Text(text = "Builder")
                 })
 
             Row(
@@ -395,36 +386,27 @@ fun NavRail(navController: NavController) {
 
                         NavigationRailItem(selected = false,
                             enabled = state.undoMenu.enabled,
-                            onClick = {
-                                state.undoMenu.onClick()
-                            },
+                            onClick = { state.undoMenu.onClick() },
                             icon = {
-                                Icon(
-                                    Icons.AutoMirrored.Outlined.Undo,
-                                    contentDescription = "Undo",
-                                )
+                                Icon(Icons.AutoMirrored.Outlined.Undo, contentDescription = "Undo")
                             },
                             label = {
-                                Text(
-                                    text = "Undo",
-                                )
-                            })
+                                Text(text = "Undo")
+                            }
+                        )
+
                         NavigationRailItem(selected = false,
                             enabled = state.redoMenu.enabled,
-                            onClick = {
-                                state.redoMenu.onClick()
-                            },
+                            onClick = { state.redoMenu.onClick() },
                             icon = {
                                 Icon(
-                                    Icons.AutoMirrored.Outlined.Redo,
-                                    contentDescription = "Redo",
+                                    Icons.AutoMirrored.Outlined.Redo, contentDescription = "Redo",
                                 )
                             },
                             label = {
-                                Text(
-                                    text = "Redo",
-                                )
-                            })
+                                Text(text = "Redo")
+                            }
+                        )
 
                         NavigationRailItem(selected = state.showMenu,
 
@@ -432,16 +414,12 @@ fun NavRail(navController: NavController) {
                                 state.showMenu = !state.showMenu
                             },
                             icon = {
-                                Icon(
-                                    Icons.Outlined.Menu,
-                                    contentDescription = "Menu",
-                                )
+                                Icon(Icons.Outlined.Menu, contentDescription = "Menu")
                             },
                             label = {
-                                Text(
-                                    text = "Menu",
-                                )
-                            })
+                                Text(text = "Menu")
+                            }
+                        )
                     }
                 }
             }
