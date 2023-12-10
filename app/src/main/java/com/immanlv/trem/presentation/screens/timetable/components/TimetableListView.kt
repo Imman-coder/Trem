@@ -40,9 +40,9 @@ fun TableListViewer(
 ) {
     Log.d("TAG", "TableStarted")
 
-    val eventList = timetable.EventList
-    val eventLine = timetable.EventTable[week]
-    val timeList = timetable.TimeList
+    val eventList = timetable.eventList
+    val eventLine = timetable.eventTable[week]
+    val timeList = timetable.timeList
 
     val backgroundColor: Color = MaterialTheme.colorScheme.background
     val mainColor: Color = MaterialTheme.colorScheme.primary
@@ -135,7 +135,7 @@ fun TableListViewer(
                     ln,
                     timeList
                 )
-                ln += (eventList[x - 1].time_span)
+                ln += (eventList[x - 1].timeSpan)
             }
         }
         Canvas(

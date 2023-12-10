@@ -18,4 +18,23 @@
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-renamesourcefileattribute SourceFile
+
+-dontobfuscate
+-keepattributes SourceFile,LineNumberTable
+
+# Gson
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep public class * implements java.lang.reflect.Type
+
+
+# Retrofit
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# Data class
+-keep class com.immanlv.trem.domain.model.* { *; }
+-keep class com.immanlv.trem.data.model.* { *; }

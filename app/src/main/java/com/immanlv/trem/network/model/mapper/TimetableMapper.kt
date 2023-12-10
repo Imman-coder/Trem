@@ -4,15 +4,17 @@ import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.domain.model.Event
 import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.domain.model.Subject
+import com.immanlv.trem.network.model.EventDto
+import com.immanlv.trem.network.model.SubjectDto
 import com.immanlv.trem.network.model.TimetableDto
 import com.immanlv.trem.network.util.DomainMapper
 
 object TimetableMapper:DomainMapper<TimetableDto,Timetable> {
     override fun mapToDomainModel(model: TimetableDto): Timetable {
         return Timetable(
-            EventTable = model.EventTable,
-            TimeList = model.TimeList,
-            EventList = model.EventList.map { event ->
+            eventTable = model.EventTable,
+            timeList = model.TimeList,
+            eventList = model.EventList.map { event ->
                 Event(
                     event.value.time_span,
                     event.value.subjects.map {
@@ -27,7 +29,26 @@ object TimetableMapper:DomainMapper<TimetableDto,Timetable> {
     }
 
     override fun mapFromDomainModel(domainModel: Timetable): TimetableDto {
-        TODO("Not yet implemented")
+        val m = mutableMapOf<String,EventDto>()
+        domainModel.eventList.forEachIndexed{ index, event ->
+            m["${index + 1}"] =
+            EventDto(
+                event.timeSpan,
+                event.subjects.map {
+                    SubjectDto(
+                        it.subject,
+                        it.subjectCode,
+                        it.teacher
+                    )
+                },
+                event.classType.ordinal
+            )
+        }
+        return TimetableDto(
+            EventTable = domainModel.eventTable,
+            TimeList = domainModel.timeList,
+            EventList = m
+        )
     }
 }
 

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.rounded.Air
 import androidx.compose.material.icons.rounded.DisplaySettings
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +47,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -95,7 +92,7 @@ fun SettingsScreen(
     ) {
         if (settingModalConfig != null) {
             BasicAlertDialog(onDismissRequest = {
-                settingModalConfig!!.onDismiss(); settingModalConfig = null;
+                settingModalConfig!!.onDismiss(); settingModalConfig = null
             }) {
                 Surface(
                     modifier = Modifier
@@ -236,6 +233,12 @@ fun SettingsScreen(
                         values = c
                     ) {
                         viewModel.onEvent(SettingScreenEvent.SetPreference(preference.copy(colorMode = s[it])))
+                    }
+                    SettingItemToggleable(
+                        title = "Dynamic Colors",
+                        enabled = preference.dynamicColor,
+                    ) {
+                        viewModel.onEvent(SettingScreenEvent.SetPreference(preference.copy(dynamicColor = it)))
                     }
                 }
                 if (preference.developerMode) {

@@ -42,6 +42,8 @@ class LoginViewModel
         viewModelScope.launch {
             when(event){
                 is LoginEvent.Login->{
+                    _eventFlow.emit(LoginUiEvent.LogInProgress("Starting up... "))
+
                     val state = loginUseCases.login(event.username,event.password,event.saveCredentials)
                     _loginStateObserver?.cancel()
                     _loginStateObserver = state.onEach {

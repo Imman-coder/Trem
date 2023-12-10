@@ -33,9 +33,10 @@ class ProfileDataRepositoryImpl
     private val scorecardDao: ScorecardDao,
     private val loginDataRepository: LoginDataRepository,
     private val networkRequests: NetworkRequests,
-    private val appDataRepository: AppDataRepository
+    private val appDataRepository: AppDataRepository,
 
-) : ProfileDataRepository {
+
+    ) : ProfileDataRepository {
     override suspend fun getProfile(): Flow<Profile> {
         if (profileDao.getCredentials().hasCredentials) return profileDao.getProfile()
         refreshProfile()
@@ -158,13 +159,17 @@ class ProfileDataRepositoryImpl
         if (!networkRequests.getLoginStatus()) {
             loginDataRepository.login()
         }
-        val scorecard = networkRequests.getResults()
-        scorecardDao.saveScorecard(scorecard)
+        try {
+            val scorecard = networkRequests.getResults()
+            scorecardDao.saveScorecard(scorecard)
+        } catch (_: Exception) {
+            scorecardDao.saveScorecard(Scorecard(error = DataErrorType.NoDataFound))
+        }
     }
 
     override suspend fun getTimetable(): Flow<Timetable> {
         if (timetableDao.getTimetable().first() != Timetable()) return timetableDao.getTimetable()
-        if (timetableDao.getTimetable().first().Error != DataErrorType.NoDataFound)
+        if (timetableDao.getTimetable().first().error != DataErrorType.NoDataFound)
             refreshTimetable()
         return timetableDao.getTimetable()
 
@@ -173,66 +178,74 @@ class ProfileDataRepositoryImpl
     override suspend fun refreshTimetable() {
         try {
             Log.d("TAG", "refreshTimetable: Started")
+            val s = appDataRepository.getAppPreference().first().loadBuilderTimetable
             val timetable: Timetable =
-                when (val v = appDataRepository.getAppPreference().first().loadCustomTimetable) {
-                    "" -> {
-                        Log.d("TAG", "refreshTimetable: No Custom")
-                        var profile: Profile
-                        runBlocking(Dispatchers.IO) {
-                            if (getProfile().first() == Profile()) {
-                                if (!networkRequests.getLoginStatus())
-                                    loginDataRepository.login()
-                                refreshProfile()
+                if (s.isNotEmpty()) {
+                    Gson().fromJson(
+                        s,
+                        Timetable::class.java
+                    )
+                } else
+                    when (val v =
+                        appDataRepository.getAppPreference().first().loadCustomTimetable) {
+                        "" -> {
+                            Log.d("TAG", "refreshTimetable: No Custom")
+                            var profile: Profile
+                            runBlocking(Dispatchers.IO) {
+                                if (getProfile().first() == Profile()) {
+                                    if (!networkRequests.getLoginStatus())
+                                        loginDataRepository.login()
+                                    refreshProfile()
+                                }
+                                profile = getProfile().first()
                             }
-                            profile = getProfile().first()
-                        }
-                        networkRequests.getTimetable(
-                            profile.program,
-                            profile.batch,
-                            profile.branch,
-                            profile.section
-                        )
-                    }
-
-                    "test", "Test", "T", "t" -> {
-                        Log.d("TAG", "refreshTimetable: Loading Test Timetable")
-                        networkRequests.getTestTimetable()
-                    }
-
-                    else -> {
-
-                        if (v.substring(0, 10).contains("inject")) {
-                            Log.d("TAG", "refreshTimetable: Loading injected Timetable")
-                            val gson = Gson()
-                            val js = v.substring(v.indexOf(":") + 1).trim()
-                            try {
-                                TimetableMapper.mapToDomainModel(
-                                    gson.fromJson(
-                                        js,
-                                        TimetableDto::class.java
-                                    )
-                                )
-                            } catch (_: Exception) {
-                                gson.fromJson(js, Timetable::class.java)
-                            }
-
-                        } else {
-                            Log.d("TAG", "refreshTimetable: Loading implicit Timetable")
-                            // Program,Batch,Branch,Section
-                            val ar = v.split(",")
                             networkRequests.getTimetable(
-                                ar[0],
-                                ar[1],
-                                ar[2],
-                                ar[3][0]
+                                profile.program,
+                                profile.batch,
+                                profile.branch,
+                                profile.section
                             )
                         }
 
+                        "test", "Test", "T", "t" -> {
+                            Log.d("TAG", "refreshTimetable: Loading Test Timetable")
+                            networkRequests.getTestTimetable()
+                        }
+
+                        else -> {
+
+                            if (v.substring(0, 10).contains("inject")) {
+                                Log.d("TAG", "refreshTimetable: Loading injected Timetable")
+                                val gson = Gson()
+                                val js = v.substring(v.indexOf(":") + 1).trim()
+                                try {
+                                    TimetableMapper.mapToDomainModel(
+                                        gson.fromJson(
+                                            js,
+                                            TimetableDto::class.java
+                                        )
+                                    )
+                                } catch (_: Exception) {
+                                    gson.fromJson(js, Timetable::class.java)
+                                }
+
+                            } else {
+                                Log.d("TAG", "refreshTimetable: Loading implicit Timetable")
+                                // Program,Batch,Branch,Section
+                                val ar = v.split(",")
+                                networkRequests.getTimetable(
+                                    ar[0],
+                                    ar[1],
+                                    ar[2],
+                                    ar[3][0]
+                                )
+                            }
+
+                        }
                     }
-                }
             timetableDao.saveTimetable(timetable)
         } catch (err: Exception) {
-            timetableDao.saveTimetable(Timetable(Error = DataErrorType.NoDataFound))
+            timetableDao.saveTimetable(Timetable(error = DataErrorType.NoDataFound))
         }
     }
 }

@@ -6,12 +6,12 @@ import com.immanlv.trem.domain.model.Timetable
 fun getTodayLastTime(timetable: Timetable):Int{
 
     val todayDay = getSystemDayOfWeekInt()
-    val todayEvents = timetable.EventTable[todayDay]
+    val todayEvents = timetable.eventTable[todayDay]
     var totalBlock = 0
 
     for (event in todayEvents){
-        totalBlock += timetable.EventList[(event-1)].time_span
+        totalBlock += timetable.eventList[(event-1)].timeSpan
     }
-    return timetable.TimeList[totalBlock]
+    return timetable.timeList[totalBlock]
 
 }

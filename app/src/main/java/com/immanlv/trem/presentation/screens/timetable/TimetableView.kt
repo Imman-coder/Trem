@@ -12,14 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.domain.model.Event
 import com.immanlv.trem.domain.model.Subject
 import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.presentation.screens.timetable.components.TimetableCard
-import com.immanlv.trem.screens.timetable.presentation.components.TableListViewer
 
 @Composable
 fun TimetableView(
@@ -35,9 +33,9 @@ fun TimetableView(
 private fun TimetableViewP(timetable: Timetable) {
     if (timetable!=Timetable())
         LazyColumn(contentPadding = PaddingValues(16.dp)){
-            itemsIndexed(timetable.EventTable[0]){_,id ->
+            itemsIndexed(timetable.eventTable[0]){ _, id ->
                 Row(Modifier.padding(vertical = 8.dp)) {
-                    TimetableCard(event = timetable.EventList[id])
+                    TimetableCard(event = timetable.eventList[id])
                 }
             }
         }
@@ -49,43 +47,43 @@ private fun TimetableViewP(timetable: Timetable) {
 private fun TimetableViewPreview() {
     Surface(modifier = Modifier.fillMaxSize()) {
         TimetableViewP(timetable = Timetable(
-            EventList = listOf(
+            eventList = listOf(
                 Event(
-                    time_span = 1,
+                    timeSpan = 1,
                     subjects = listOf(
                         Subject(
                             subject = "Hellows",
-                            subject_code = "ETM222",
+                            subjectCode = "ETM222",
                             teacher = "Someone 1"
                         )
                     ),
-                    class_type = ClassType.Theory
+                    classType = ClassType.Theory
                 ),
                 Event(
-                    time_span = 1,
+                    timeSpan = 1,
                     subjects = listOf(
                         Subject(
                             subject = "Hellows",
-                            subject_code = "ETM222",
+                            subjectCode = "ETM222",
                             teacher = "Someone 2"
                         )
                     ),
-                    class_type = ClassType.Lab
+                    classType = ClassType.Lab
                 ),
                 Event(
-                    time_span = 1,
+                    timeSpan = 1,
                     subjects = listOf(
                         Subject(
                             subject = "Hellows",
-                            subject_code = "ETM222",
+                            subjectCode = "ETM222",
                             teacher = "Someone 3"
                         )
                     ),
-                    class_type = ClassType.Theory
+                    classType = ClassType.Theory
                 )
             ),
-            EventTable = listOf(listOf(0,1,2)),
-            TimeList = listOf(915,980,1045,1110)
+            eventTable = listOf(listOf(0,1,2)),
+            timeList = listOf(915,980,1045,1110)
         ))
     }
 }

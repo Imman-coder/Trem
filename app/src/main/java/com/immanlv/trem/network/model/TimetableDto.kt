@@ -1,9 +1,11 @@
 package com.immanlv.trem.network.model
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Keep
 data class TimetableDto(
     @SerializedName("EventTable")
     val EventTable: List<List<Int>>,
@@ -14,6 +16,7 @@ data class TimetableDto(
 )
 
 @Serializable
+@Keep
 data class EventDto(
     val time_span: Int,
     @SerializedName("subjects")
@@ -22,6 +25,7 @@ data class EventDto(
 )
 
 @Serializable
+@Keep
 data class SubjectDto(
     val subject: String,
     val subject_code: String,

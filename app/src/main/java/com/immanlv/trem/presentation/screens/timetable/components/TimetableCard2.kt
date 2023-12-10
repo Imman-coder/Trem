@@ -28,7 +28,7 @@ fun TimetableCard2(modifier: Modifier = Modifier, event: Event, numElem: Int, ti
 
 
 
-    val cardHeight = (60.dp * (event.time_span)) + (10.dp * (event.time_span -1 ))
+    val cardHeight = (60.dp * (event.timeSpan)) + (10.dp * (event.timeSpan -1 ))
 
     val eventName = event.subjects[0].subject
 
@@ -48,14 +48,14 @@ fun TimetableCard2(modifier: Modifier = Modifier, event: Event, numElem: Int, ti
         ) {
             Text(text = eventName, color = MaterialTheme.colorScheme.onPrimary)
             Text(
-                text = "${intToTime(timeList[numElem])} - ${intToTime(timeList[numElem + event.time_span])}",
+                text = "${intToTime(timeList[numElem])} - ${intToTime(timeList[numElem + event.timeSpan])}",
                 color = MaterialTheme.colorScheme.onPrimary,
                 style = MaterialTheme.typography.labelSmall
             )
         }
 
-        if (event.class_type != ClassType.Theory) {
-            val t = when (event.class_type) {
+        if (event.classType != ClassType.Theory) {
+            val t = when (event.classType) {
                 ClassType.Notice -> "Notice"
                 ClassType.Lab -> "Lab"
                 else -> ""
@@ -85,5 +85,5 @@ fun TimetableCard2(modifier: Modifier = Modifier, event: Event, numElem: Int, ti
 @Preview
 @Composable
 fun Preview() {
-    TimetableCard(event = Event(0, listOf(Subject(subject="Design Analysis Algorithm", subject_code ="", teacher="Sikheresh Barik")), ClassType.Lab))
+    TimetableCard(event = Event(0, listOf(Subject(subject="Design Analysis Algorithm", subjectCode ="", teacher="Sikheresh Barik")), ClassType.Lab))
 }

@@ -1,8 +1,10 @@
 package com.immanlv.trem.network.model
 
+import androidx.annotation.Keep
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Keep
 data class ScorecardDto(
     val cgpa: Float = -1f,
     val sems: List<SemDto> = listOf()
@@ -10,6 +12,7 @@ data class ScorecardDto(
 
 
 @Serializable
+@Keep
 data class SemDto(
     val sem: Int,
     val sgpa: Float,
@@ -17,6 +20,7 @@ data class SemDto(
 )
 
 @Serializable
+@Keep
 data class ScorecardSubjectDto(
     val name: String,
     val code: String,

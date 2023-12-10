@@ -1,16 +1,19 @@
 package com.immanlv.trem.network.model
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 
 
 @Serializable
+@Keep
 data class AttendanceDto(
     @SerializedName("aaData")
     val attendanceList: List<AttendanceSubjects>
 )
 
 @Serializable
+@Keep
 data class AttendanceSubjects(
     @SerializedName("0") val sl_no: Int,
     @SerializedName("1") val subject: String,

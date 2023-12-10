@@ -1,11 +1,13 @@
 package com.immanlv.trem.domain.model
 
+import com.immanlv.trem.domain.util.DataErrorType
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Scorecard(
     val cgpa:Float = -1f,
-    val sems :List<Sem> = listOf()
+    val sems :List<Sem> = listOf(),
+    val error: DataErrorType = DataErrorType.NoError
 )
 
 

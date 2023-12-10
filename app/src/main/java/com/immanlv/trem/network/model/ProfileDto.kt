@@ -1,8 +1,10 @@
 package com.immanlv.trem.network.model
 
+import androidx.annotation.Keep
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Keep
 data class ProfileDto (
     val name: String = "",
     val redgno : Long = -1,

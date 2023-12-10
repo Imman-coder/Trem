@@ -12,10 +12,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +23,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Redo
+import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Home
@@ -52,7 +51,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -79,6 +77,7 @@ import com.immanlv.trem.presentation.screens.settings.SettingsScreen
 import com.immanlv.trem.presentation.screens.timetable.TimetableViewModel
 import com.immanlv.trem.presentation.screens.timetable.Tts
 import com.immanlv.trem.presentation.screens.timetableBuilder.TimetableBuilderScreen
+import com.immanlv.trem.presentation.screens.timetableBuilder.TimetableBuilderViewModel
 import com.immanlv.trem.presentation.theme.TremTheme
 import com.immanlv.trem.presentation.util.BottomNavigationItem
 import com.immanlv.trem.presentation.util.FloatingBottomNavigation
@@ -110,6 +109,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             var sysDarkTheme by remember { mutableStateOf(false) }
+            var useDynamicColor by remember { mutableStateOf(false) }
 
             val windowClass = calculateWindowSizeClass(this)
 
@@ -126,11 +126,12 @@ class MainActivity : ComponentActivity() {
                 ColorMode.Light -> false
             }
 
+            useDynamicColor = viewModel.appPreference.value.dynamicColor
+
             Box(
                 Modifier
-//                .safeDrawingPadding()
             ) {
-                TremTheme(darkTheme = sysDarkTheme) {
+                TremTheme(darkTheme = sysDarkTheme, dynamicColor = useDynamicColor) {
                     // A surface container using the 'background' color from the theme
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -187,12 +188,10 @@ class MainActivity : ComponentActivity() {
                                                     Icon(
                                                         item.icon,
                                                         contentDescription = item.label,
-                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
                                                     )
                                                 }) {
                                                 Text(
                                                     text = item.label,
-                                                    color = MaterialTheme.colorScheme.onSecondaryContainer
                                                 )
                                             }
                                         }
@@ -203,9 +202,9 @@ class MainActivity : ComponentActivity() {
                                     NavigationRail {
                                         Column(
                                             modifier = Modifier.fillMaxHeight(),
-//                                        verticalArrangement = Arrangement.spacedBy(
-//                                            12.dp, Alignment.Top
-//                                        )
+                                            verticalArrangement = Arrangement.spacedBy(
+                                                12.dp, Alignment.Top
+                                            )
                                         ) {
                                             navigationItems.forEachIndexed { _, item ->
                                                 NavigationRailItem(selected = currentDestination?.route == item.route,
@@ -218,13 +217,11 @@ class MainActivity : ComponentActivity() {
                                                         Icon(
                                                             item.icon,
                                                             contentDescription = item.label,
-                                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
                                                         )
                                                     },
                                                     label = {
                                                         Text(
                                                             text = item.label,
-                                                            color = MaterialTheme.colorScheme.onSecondaryContainer
                                                         )
                                                     })
                                             }
@@ -238,13 +235,11 @@ class MainActivity : ComponentActivity() {
                                                     Icon(
                                                         Icons.Outlined.TableChart,
                                                         contentDescription = "Builder",
-                                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
                                                     )
                                                 },
                                                 label = {
                                                     Text(
                                                         text = "Builder",
-                                                        color = MaterialTheme.colorScheme.onSecondaryContainer
                                                     )
                                                 })
 
@@ -259,24 +254,62 @@ class MainActivity : ComponentActivity() {
                                                     enter = slideInHorizontally { width -> -width } + fadeIn(),
                                                     exit = slideOutHorizontally { width -> -width } + fadeOut()
                                                 ) {
-                                                    NavigationRailItem(selected = state.showMenu,
+                                                    Column(
+                                                        verticalArrangement = Arrangement.spacedBy(
+                                                            12.dp, Alignment.Top
+                                                        )
+                                                    ) {
 
-                                                        onClick = {
-                                                            state.showMenu = !state.showMenu
-                                                        },
-                                                        icon = {
-                                                            Icon(
-                                                                Icons.Outlined.Menu,
-                                                                contentDescription = "Menu",
-                                                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                                            )
-                                                        },
-                                                        label = {
-                                                            Text(
-                                                                text = "Menu",
-                                                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                                                            )
-                                                        })
+                                                        NavigationRailItem(selected = false,
+                                                            enabled = state.undoMenu.enabled,
+                                                            onClick = {
+                                                                state.undoMenu.onClick()
+                                                            },
+                                                            icon = {
+                                                                Icon(
+                                                                    Icons.AutoMirrored.Outlined.Undo,
+                                                                    contentDescription = "Undo",
+                                                                )
+                                                            },
+                                                            label = {
+                                                                Text(
+                                                                    text = "Undo",
+                                                                )
+                                                            })
+                                                        NavigationRailItem(selected = false,
+                                                            enabled = state.redoMenu.enabled,
+                                                            onClick = {
+                                                                state.redoMenu.onClick()
+                                                            },
+                                                            icon = {
+                                                                Icon(
+                                                                    Icons.AutoMirrored.Outlined.Redo,
+                                                                    contentDescription = "Redo",
+                                                                )
+                                                            },
+                                                            label = {
+                                                                Text(
+                                                                    text = "Redo",
+                                                                )
+                                                            })
+
+                                                        NavigationRailItem(selected = state.showMenu,
+
+                                                            onClick = {
+                                                                state.showMenu = !state.showMenu
+                                                            },
+                                                            icon = {
+                                                                Icon(
+                                                                    Icons.Outlined.Menu,
+                                                                    contentDescription = "Menu",
+                                                                )
+                                                            },
+                                                            label = {
+                                                                Text(
+                                                                    text = "Menu",
+                                                                )
+                                                            })
+                                                    }
                                                 }
 
                                             }
@@ -315,7 +348,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             navigation(
-                startDestination = Screen.TimetableBuilder.route, route = Screen.MainNavGraph.route
+                startDestination = Screen.Home.route, route = Screen.MainNavGraph.route
             ) {
                 composable(Screen.Home.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<HomeScreenViewModel>(navController)
@@ -336,7 +369,8 @@ class MainActivity : ComponentActivity() {
                     ProfileScreen(navController = navController, viewModel = viewModel)
                 }
                 composable(Screen.TimetableBuilder.route, enterTransition = { fadeIn(tween(0)) }) {
-                    TimetableBuilderScreen(navController = navController)
+                    val viewModel = it.sharedViewModel<TimetableBuilderViewModel>(navController)
+                    TimetableBuilderScreen(navController = navController, viewModel = viewModel)
                 }
             }
             navigation(
@@ -377,7 +411,14 @@ internal val LocalRailStatus = compositionLocalOf { RailStatus() }
 internal class RailStatus {
     var hideRail: Boolean by mutableStateOf(false)
     var showMenu: Boolean by mutableStateOf(false)
+    var undoMenu: ItemState by mutableStateOf(ItemState())
+    var redoMenu: ItemState by mutableStateOf(ItemState())
 }
+
+data class ItemState(
+    val enabled: Boolean = false,
+    val onClick: () -> Unit = {}
+)
 
 @Composable
 inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(navController: NavController): T {

@@ -27,10 +27,8 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +59,6 @@ import com.immanlv.trem.screens.timetable.presentation.components.TableListViewe
 import com.immanlv.trem.presentation.screens.timetable.util.getSystemTimeInt
 import com.immanlv.trem.presentation.screens.timetable.util.shimmerEffect
 import com.immanlv.trem.presentation.screens.timetable.util.toPx
-import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -151,7 +148,7 @@ fun Tts(
         onRefresh = { viewModel.onEvent(TimetableScreenEvent.RefreshTimetable) })
     Box(Modifier.pullRefresh(pullRefreshState)) {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-            if (timetable.Error == DataErrorType.NoDataFound) {
+            if (timetable.error == DataErrorType.NoDataFound) {
                 Row(
                     Modifier
                         .fillMaxSize()

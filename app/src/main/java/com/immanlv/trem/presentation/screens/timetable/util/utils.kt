@@ -12,7 +12,7 @@ returns the index of the element in the list that is closest to `item`. It does 
 through the list and finding the element that is just smaller than `item`. If `item` is smaller than
 the first element in the list, it returns 0. */
 fun Timetable.getCurrentTimeIndexFromTime(time: Int): Int {
-    val timeList = this.TimeList
+    val timeList = this.timeList
     var t = 0
     for (x in 1 until timeList.size) {
         if (time > timeList[x])

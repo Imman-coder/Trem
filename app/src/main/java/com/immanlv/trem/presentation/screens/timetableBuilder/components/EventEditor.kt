@@ -3,7 +3,6 @@ package com.immanlv.trem.presentation.screens.timetableBuilder.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -13,7 +12,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,18 +35,18 @@ fun EventEditor(
             mutableStateOf(event.subjects)
         }
         var timeSpan by remember {
-            mutableStateOf(event.time_span)
+            mutableStateOf(event.timeSpan)
         }
         var classType by remember {
-            mutableStateOf(event.class_type)
+            mutableStateOf(event.classType)
         }
         LaunchedEffect(key1 = subjects,timeSpan,classType) {
             onValueUpdate(Event(timeSpan,subjects,classType))
         }
         LaunchedEffect(key1 = event) {
             subjects = event.subjects
-            timeSpan = event.time_span
-            classType = event.class_type
+            timeSpan = event.timeSpan
+            classType = event.classType
         }
         Row(
             modifier = Modifier,
@@ -103,13 +101,13 @@ fun EventEditor(
                             ) {
                                 Text(text = "Subject Code")
                                 OutlinedTextField(
-                                    value = subject.subject_code,
+                                    value = subject.subjectCode,
                                     onValueChange = {
                                         subjects = subjects.toMutableList()
                                             .apply { removeAt(id) }.apply {
                                                 add(
                                                     id,
-                                                    subjects[id].copy(subject_code = it)
+                                                    subjects[id].copy(subjectCode = it)
                                                 )
                                             }
 

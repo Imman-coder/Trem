@@ -17,9 +17,9 @@ fun Timetable.getCurrentEventTableIndexFromTime(time: Int): Int {
 
     if (k == 0) return 0
 
-    for (x in 0 until this.EventTable[dayOfWeek].size) {
-        val event1 = this.EventList[(this.EventTable[dayOfWeek][x] - 1)]
-        if (k > event1.time_span) k -= event1.time_span
+    for (x in 0 until this.eventTable[dayOfWeek].size) {
+        val event1 = this.eventList[(this.eventTable[dayOfWeek][x] - 1)]
+        if (k > event1.timeSpan) k -= event1.timeSpan
         else return x
     }
     return event

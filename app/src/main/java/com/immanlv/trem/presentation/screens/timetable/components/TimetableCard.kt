@@ -21,7 +21,7 @@ fun TimetableCard(event: Event) {
             .padding(15.dp)
             .fillMaxWidth()) {
             Text(text = event.subjects[0].subject)
-            Text(text = event.subjects[0].subject_code)
+            Text(text = event.subjects[0].subjectCode)
         }
     }
 }
@@ -31,15 +31,15 @@ fun TimetableCard(event: Event) {
 fun TimetableCardPreview() {
     TimetableCard(
         Event(
-            time_span = 1,
+            timeSpan = 1,
             subjects = listOf(
                 Subject(
                     subject = "Hellows",
-                    subject_code = "ETM222",
+                    subjectCode = "ETM222",
                     teacher = "Someone 1"
                 )
             ),
-            class_type = ClassType.Theory
+            classType = ClassType.Theory
         )
     )
 }
