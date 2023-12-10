@@ -23,8 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.immanlv.trem.domain.model.Attendance
 import com.immanlv.trem.domain.model.AttendanceSubject
 import com.immanlv.trem.domain.model.SubjectType
@@ -33,14 +31,13 @@ import com.immanlv.trem.presentation.screens.attendance.components.AttendanceCar
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun AttendanceView(
-    navController: NavController,
-    viewModel: AttendanceViewModel = hiltViewModel()
+    attendance: Attendance,
+    attendanceState:AttendanceState,
+    onEvent:(AttendanceViewEvent)->Unit
 ) {
-    val attendanceCards = viewModel.attendance.value
     var isRefreshing by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
-    when (viewModel.attendanceState.value) {
+    when (attendanceState) {
         is AttendanceState.Idle -> {
             isRefreshing = false
 
@@ -65,15 +62,15 @@ fun AttendanceView(
     val pullRefreshState =
         rememberPullRefreshState(
             refreshing = isRefreshing,
-            onRefresh = { viewModel.onEvent(AttendanceViewEvent.RefreshAttendanceView) })
+            onRefresh = { onEvent(AttendanceViewEvent.RefreshAttendanceView) })
 
 
     Box(
         modifier = Modifier.pullRefresh(pullRefreshState)
     ) {
     AttendanceViewColumn(
-        attendance = attendanceCards,
-        refreshLastUpdated = { viewModel.onEvent(AttendanceViewEvent.RefreshLateUpdated(it)) }
+        attendance = attendance,
+        refreshLastUpdated = { onEvent(AttendanceViewEvent.RefreshLateUpdated(it)) }
     )
         PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }

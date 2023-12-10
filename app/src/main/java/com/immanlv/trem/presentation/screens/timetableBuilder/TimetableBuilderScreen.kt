@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.domain.util.Constants
 import com.immanlv.trem.presentation.ItemState
 import com.immanlv.trem.presentation.LocalRailStatus
@@ -70,17 +71,17 @@ import com.touchlane.gridpad.GridPadCells
 
 @Composable
 fun TimetableBuilderScreen(
-    navController: NavController,
-    viewModel: TimetableBuilderViewModel = hiltViewModel()
+    timetable: Timetable,
+    colorTable:List<Color>,
+    undoRedoStack:Pair<Int,Int>,
+    onEvent:(TimetableBuilderEvent)->Unit,
+    getTimetableAsBytes:()->ByteArray
 ) {
 
     val context = LocalContext.current
     val railState = LocalRailStatus.current
     val density = LocalDensity.current
     val clipboardManager: ClipboardManager = LocalClipboardManager.current
-
-    val colorTable = viewModel.colorTable.value
-    val timetable = viewModel.timetable.value
 
     val eventTable = timetable.eventTable
     val timeList = timetable.timeList
@@ -93,16 +94,16 @@ fun TimetableBuilderScreen(
 
     var enableCopy = false
 
-    LaunchedEffect(key1 = viewModel.undoRedoStack.value) {
+    LaunchedEffect(key1 = undoRedoStack) {
         railState.undoMenu = ItemState(
-            viewModel.undoRedoStack.value.first > 0
+            undoRedoStack.first > 0
         ) {
-            viewModel.undo()
+            onEvent(TimetableBuilderEvent.Undo)
         }
         railState.redoMenu = ItemState(
-            viewModel.undoRedoStack.value.second > 0
+            undoRedoStack.second > 0
         ) {
-            viewModel.redo()
+            onEvent(TimetableBuilderEvent.Redo)
         }
     }
 
@@ -121,35 +122,35 @@ fun TimetableBuilderScreen(
 
     //
     fun addTime(time: Int) {
-        viewModel.onEvent(TimetableBuilderEvent.AddTime(time))
+        onEvent(TimetableBuilderEvent.AddTime(time))
     }
 
     fun removeTime(index: Int) {
-        viewModel.onEvent(TimetableBuilderEvent.RemoveTime(index))
+        onEvent(TimetableBuilderEvent.RemoveTime(index))
     }
 
     fun setTime(index: Int, time: Int) {
-        viewModel.onEvent(TimetableBuilderEvent.EditTime(index, time))
+        onEvent(TimetableBuilderEvent.EditTime(index, time))
     }
 
     //
     fun addEvent(row: Int) {
-        viewModel.onEvent(TimetableBuilderEvent.AddBlankEvent(row))
+        onEvent(TimetableBuilderEvent.AddBlankEvent(row))
     }
 
     fun delete(from: Pair<Int, Int>) {
         if (from == selectedEvent) {
             selectedEvent = Pair(-1, -1)
         }
-        viewModel.onEvent(TimetableBuilderEvent.DeleteEvent(from))
+        onEvent(TimetableBuilderEvent.DeleteEvent(from))
     }
 
     fun pasteEvent(to: Pair<Int, Int>) {
-        viewModel.onEvent(TimetableBuilderEvent.PasteEventId(clipboardEvent, to))
+        onEvent(TimetableBuilderEvent.PasteEventId(clipboardEvent, to))
     }
 
     fun copyTo(from: Pair<Int, Int>, to: Pair<Int, Int>) {
-        viewModel.onEvent(TimetableBuilderEvent.CopyEvent(from, to))
+        onEvent(TimetableBuilderEvent.CopyEvent(from, to))
     }
 
     fun moveTo(from: Pair<Int, Int>, to: Pair<Int, Int>) {
@@ -161,7 +162,7 @@ fun TimetableBuilderScreen(
         if (selectedEvent == from) {
             selectedEvent = to
         }
-        viewModel.onEvent(TimetableBuilderEvent.MoveEvent(from, to))
+        onEvent(TimetableBuilderEvent.MoveEvent(from, to))
     }
 
 
@@ -386,7 +387,7 @@ fun TimetableBuilderScreen(
                         }
                         NavigationRailItem(
                             selected = hovered,
-                            onClick = { /*TODO*/ },
+                            onClick = {},
                             icon = { Icon(Icons.Rounded.ContentCopy, "Copy") },
                             label = { Text("Copy") })
                     }
@@ -403,7 +404,7 @@ fun TimetableBuilderScreen(
 
                         NavigationRailItem(
                             selected = enableCopy,
-                            onClick = { /*TODO*/ },
+                            onClick = {},
                             icon = { Icon(Icons.Rounded.CopyAll, "Duplicate") },
                             label = { Text("Duplicate") })
                     }
@@ -420,7 +421,7 @@ fun TimetableBuilderScreen(
                 EventEditor(
                     event = eventList[selectedEventId]
                 ) {
-                    viewModel.onEvent(TimetableBuilderEvent.EditEvent(selectedEventId, it))
+                    onEvent(TimetableBuilderEvent.EditEvent(selectedEventId, it))
                 }
             }
 
@@ -514,7 +515,7 @@ fun TimetableBuilderScreen(
             FileDropdownMenuItem(
                 "New",
                 onClick = {
-                    viewModel.onEvent(TimetableBuilderEvent.NewTable)
+                    onEvent(TimetableBuilderEvent.NewTable)
                 }
             ),
             FileDropdownMenuItem(
@@ -530,19 +531,19 @@ fun TimetableBuilderScreen(
             FileDropdownMenuItem(
                 "Inject Table",
                 onClick = {
-                    viewModel.onEvent(TimetableBuilderEvent.ToggleTimetableInject)
+                    onEvent(TimetableBuilderEvent.ToggleTimetableInject)
                 },
                 leadingIcon = {
-                    Icon(
-                        if (viewModel.isTableInjected.value) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                        contentDescription = "Timetable Injected"
-                    )
+//                    Icon(
+//                        if (isTableInjected.value) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+//                        contentDescription = "Timetable Injected"
+//                    )
                 }
             ),
             FileDropdownMenuItem(
                 "Refresh Color Palette",
                 onClick = {
-                    viewModel.onEvent(TimetableBuilderEvent.RefreshColorTable)
+                    onEvent(TimetableBuilderEvent.RefreshColorTable)
                 }
             ),
         )
@@ -561,7 +562,7 @@ fun TimetableBuilderScreen(
                         openPicker = true
                     ) {
                         try {
-                            viewModel.onEvent(TimetableBuilderEvent.LoadJson(it!!.toString(Charsets.UTF_8)))
+                            onEvent(TimetableBuilderEvent.LoadJson(it!!.toString(Charsets.UTF_8)))
                         } catch (e: Exception) {
                             Toast.makeText(context, "Failed to load file", Toast.LENGTH_SHORT)
                                 .show()
@@ -573,7 +574,7 @@ fun TimetableBuilderScreen(
                 "Clipboard",
                 onClick = {
                     try {
-                        viewModel.onEvent(TimetableBuilderEvent.LoadJson(clipboardManager.getText()!!.text))
+                        onEvent(TimetableBuilderEvent.LoadJson(clipboardManager.getText()!!.text))
                     } catch (e: Exception) {
                         Log.e("TAG", "provideFileMenu: $e")
                         Toast.makeText(context, "Failed to load", Toast.LENGTH_SHORT)
@@ -596,7 +597,7 @@ fun TimetableBuilderScreen(
                         title = "Enter file name",
                         onSet = {
                             val fn =
-                                saveFileToDownloads("$it.json", viewModel.getTimetableAsBytes())
+                                saveFileToDownloads("$it.json", getTimetableAsBytes())
                             Toast.makeText(context, "Exported to $fn", Toast.LENGTH_SHORT).show()
                             pickerData = null
                         },
@@ -618,7 +619,7 @@ fun TimetableBuilderScreen(
                 onClick = {
                     clipboardManager.setText(
                         AnnotatedString(
-                            viewModel.getTimetableAsBytes().toString(Charsets.UTF_8)
+                            getTimetableAsBytes().toString(Charsets.UTF_8)
                         )
                     )
                     Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()

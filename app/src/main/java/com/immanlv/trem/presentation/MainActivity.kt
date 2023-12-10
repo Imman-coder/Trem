@@ -43,6 +43,7 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,11 +66,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.immanlv.trem.domain.model.ColorMode
+import com.immanlv.trem.network.repository.getTimetable
 import com.immanlv.trem.presentation.screens.attendance.AttendanceView
 import com.immanlv.trem.presentation.screens.attendance.AttendanceViewModel
 import com.immanlv.trem.presentation.screens.home.HomeScreen
 import com.immanlv.trem.presentation.screens.home.HomeScreenViewModel
 import com.immanlv.trem.presentation.screens.login.LoginScreen
+import com.immanlv.trem.presentation.screens.login.LoginViewModel
 import com.immanlv.trem.presentation.screens.profile.ProfileScreen
 import com.immanlv.trem.presentation.screens.profile.ProfileScreenViewModel
 import com.immanlv.trem.presentation.screens.settings.SettingScreenViewModel
@@ -144,10 +147,8 @@ class MainActivity : ComponentActivity() {
 
 
                         LaunchedEffect(key1 = loggedIn) {
-                            Log.d("TAG", "onCreate: $loggedIn")
                             if (loggedIn) {
                                 scope.launch {
-                                    Toast.makeText(context, "Logged In", Toast.LENGTH_SHORT).show()
                                     navController.navigate(Screen.MainNavGraph.route) {
                                         popUpTo(Screen.AuthNavGraph.route) {
                                             inclusive = true
@@ -199,122 +200,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             } else {
                                 AnimatedVisibility(!state.hideRail) {
-                                    NavigationRail {
-                                        Column(
-                                            modifier = Modifier.fillMaxHeight(),
-                                            verticalArrangement = Arrangement.spacedBy(
-                                                12.dp, Alignment.Top
-                                            )
-                                        ) {
-                                            navigationItems.forEachIndexed { _, item ->
-                                                NavigationRailItem(selected = currentDestination?.route == item.route,
-                                                    onClick = {
-                                                        if (item.route != currentDestination?.route) navController.navigate(
-                                                            item.route
-                                                        )
-                                                    },
-                                                    icon = {
-                                                        Icon(
-                                                            item.icon,
-                                                            contentDescription = item.label,
-                                                        )
-                                                    },
-                                                    label = {
-                                                        Text(
-                                                            text = item.label,
-                                                        )
-                                                    })
-                                            }
-                                            NavigationRailItem(selected = currentDestination?.route == Screen.TimetableBuilder.route,
-                                                onClick = {
-                                                    if (Screen.TimetableBuilder.route != currentDestination?.route) navController.navigate(
-                                                        Screen.TimetableBuilder.route
-                                                    )
-                                                },
-                                                icon = {
-                                                    Icon(
-                                                        Icons.Outlined.TableChart,
-                                                        contentDescription = "Builder",
-                                                    )
-                                                },
-                                                label = {
-                                                    Text(
-                                                        text = "Builder",
-                                                    )
-                                                })
-
-                                            Row(
-                                                modifier = Modifier
-                                                    .weight(20f)
-                                                    .fillMaxHeight(),
-                                                verticalAlignment = Alignment.Bottom
-                                            ) {
-                                                AnimatedVisibility(
-                                                    visible = currentDestination?.route == Screen.TimetableBuilder.route,
-                                                    enter = slideInHorizontally { width -> -width } + fadeIn(),
-                                                    exit = slideOutHorizontally { width -> -width } + fadeOut()
-                                                ) {
-                                                    Column(
-                                                        verticalArrangement = Arrangement.spacedBy(
-                                                            12.dp, Alignment.Top
-                                                        )
-                                                    ) {
-
-                                                        NavigationRailItem(selected = false,
-                                                            enabled = state.undoMenu.enabled,
-                                                            onClick = {
-                                                                state.undoMenu.onClick()
-                                                            },
-                                                            icon = {
-                                                                Icon(
-                                                                    Icons.AutoMirrored.Outlined.Undo,
-                                                                    contentDescription = "Undo",
-                                                                )
-                                                            },
-                                                            label = {
-                                                                Text(
-                                                                    text = "Undo",
-                                                                )
-                                                            })
-                                                        NavigationRailItem(selected = false,
-                                                            enabled = state.redoMenu.enabled,
-                                                            onClick = {
-                                                                state.redoMenu.onClick()
-                                                            },
-                                                            icon = {
-                                                                Icon(
-                                                                    Icons.AutoMirrored.Outlined.Redo,
-                                                                    contentDescription = "Redo",
-                                                                )
-                                                            },
-                                                            label = {
-                                                                Text(
-                                                                    text = "Redo",
-                                                                )
-                                                            })
-
-                                                        NavigationRailItem(selected = state.showMenu,
-
-                                                            onClick = {
-                                                                state.showMenu = !state.showMenu
-                                                            },
-                                                            icon = {
-                                                                Icon(
-                                                                    Icons.Outlined.Menu,
-                                                                    contentDescription = "Menu",
-                                                                )
-                                                            },
-                                                            label = {
-                                                                Text(
-                                                                    text = "Menu",
-                                                                )
-                                                            })
-                                                    }
-                                                }
-
-                                            }
-                                        }
-                                    }
+                                    NavRail(navController = navController)
                                 }
 
                             }
@@ -344,7 +230,12 @@ class MainActivity : ComponentActivity() {
                 startDestination = Screen.Login.route, route = Screen.AuthNavGraph.route
             ) {
                 composable(Screen.Login.route) {
-                    LoginScreen(navController = navController)
+                    val viewModel = it.sharedViewModel<LoginViewModel>(navController)
+                    LoginScreen(
+                        credentials = viewModel.credential,
+                        eventFlow = viewModel.eventFlow,
+                        onEvent = viewModel::onEvent
+                    )
                 }
             }
             navigation(
@@ -352,25 +243,50 @@ class MainActivity : ComponentActivity() {
             ) {
                 composable(Screen.Home.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<HomeScreenViewModel>(navController)
-                    HomeScreen(navController = navController, viewModel = viewModel)
+                    HomeScreen(
+                        profile = viewModel.profile.value,
+                        timetable = viewModel.timetable.value
+                    )
                 }
                 composable(Screen.Timetable.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<TimetableViewModel>(navController)
-                    Tts(navController = navController, viewModel = viewModel)
+                    Tts(
+                        timetable = viewModel.timetable.value,
+                        timetableState = viewModel.timetableState.value,
+                        onEvent = viewModel::onEvent
+                    )
                 }
                 composable(Screen.Attendance.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<AttendanceViewModel>(navController)
                     AttendanceView(
-                        navController = navController, viewModel = viewModel
+                        attendance = viewModel.attendance.value,
+                        attendanceState = viewModel.attendanceState.value,
+                        onEvent = viewModel::onEvent
                     )
                 }
                 composable(Screen.Profile.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<ProfileScreenViewModel>(navController)
-                    ProfileScreen(navController = navController, viewModel = viewModel)
+                    ProfileScreen(
+                        profile = viewModel.profile.value,
+                        scorecard = viewModel.scorecard.value,
+                        openSettingsPage = { navController.navigate(Screen.SettingsMain.route) },
+                        onEvent = viewModel::onEvent
+                    )
                 }
+
+                /*
+                * Experimental Feature only available for Large Screen devices.
+                * Used for making timetable inside the app.
+                */
                 composable(Screen.TimetableBuilder.route, enterTransition = { fadeIn(tween(0)) }) {
                     val viewModel = it.sharedViewModel<TimetableBuilderViewModel>(navController)
-                    TimetableBuilderScreen(navController = navController, viewModel = viewModel)
+                    TimetableBuilderScreen(
+                        timetable = viewModel.timetable.value,
+                        colorTable = viewModel.colorTable.value,
+                        undoRedoStack = viewModel.undoRedoStack.value,
+                        getTimetableAsBytes = viewModel::getTimetableAsBytes,
+                        onEvent = viewModel::onEvent,
+                    )
                 }
             }
             navigation(
@@ -378,11 +294,13 @@ class MainActivity : ComponentActivity() {
             ) {
                 composable(Screen.SettingsMain.route) {
                     val viewModel = it.sharedViewModel<SettingScreenViewModel>(navController)
-                    SettingsScreen(navController = navController, viewModel = viewModel)
+                    SettingsScreen(
+                        profile = viewModel.profile.value,
+                        preference = viewModel.appPreference.value,
+                        closeSettings = { navController.popBackStack() },
+                        onEvent = viewModel::onEvent
+                    )
                 }
-//                composable(Screen.SettingsNotification.route) {
-//                    NotificationSettingScreen(navController = navController)
-//                }
             }
         }
     }
@@ -403,6 +321,132 @@ fun bottomNavigationItems(): List<BottomNavigationItem> {
             label = "Profile", icon = Icons.Outlined.AccountCircle, route = Screen.Profile.route
         ),
     )
+}
+
+@Composable
+fun NavRail(navController: NavController) {
+
+    val state = LocalRailStatus.current
+
+    val navigationItems = bottomNavigationItems()
+    val currentBackstack = navController.currentBackStackEntryAsState()
+    val currentDestination = currentBackstack.value?.destination
+
+    NavigationRail {
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(
+                12.dp, Alignment.Top
+            )
+        ) {
+            navigationItems.forEachIndexed { _, item ->
+                NavigationRailItem(selected = currentDestination?.route == item.route,
+                    onClick = {
+                        if (item.route != currentDestination?.route) navController.navigate(
+                            item.route
+                        )
+                    },
+                    icon = {
+                        Icon(
+                            item.icon,
+                            contentDescription = item.label,
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = item.label,
+                        )
+                    })
+            }
+            NavigationRailItem(selected = currentDestination?.route == Screen.TimetableBuilder.route,
+                onClick = {
+                    if (Screen.TimetableBuilder.route != currentDestination?.route) navController.navigate(
+                        Screen.TimetableBuilder.route
+                    )
+                },
+                icon = {
+                    Icon(
+                        Icons.Outlined.TableChart,
+                        contentDescription = "Builder",
+                    )
+                },
+                label = {
+                    Text(
+                        text = "Builder",
+                    )
+                })
+
+            Row(
+                modifier = Modifier
+                    .weight(20f)
+                    .fillMaxHeight(),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                AnimatedVisibility(
+                    visible = currentDestination?.route == Screen.TimetableBuilder.route,
+                    enter = slideInHorizontally { width -> -width } + fadeIn(),
+                    exit = slideOutHorizontally { width -> -width } + fadeOut()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(
+                            12.dp, Alignment.Top
+                        )
+                    ) {
+
+                        NavigationRailItem(selected = false,
+                            enabled = state.undoMenu.enabled,
+                            onClick = {
+                                state.undoMenu.onClick()
+                            },
+                            icon = {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.Undo,
+                                    contentDescription = "Undo",
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = "Undo",
+                                )
+                            })
+                        NavigationRailItem(selected = false,
+                            enabled = state.redoMenu.enabled,
+                            onClick = {
+                                state.redoMenu.onClick()
+                            },
+                            icon = {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.Redo,
+                                    contentDescription = "Redo",
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = "Redo",
+                                )
+                            })
+
+                        NavigationRailItem(selected = state.showMenu,
+
+                            onClick = {
+                                state.showMenu = !state.showMenu
+                            },
+                            icon = {
+                                Icon(
+                                    Icons.Outlined.Menu,
+                                    contentDescription = "Menu",
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = "Menu",
+                                )
+                            })
+                    }
+                }
+            }
+        }
+    }
 }
 
 

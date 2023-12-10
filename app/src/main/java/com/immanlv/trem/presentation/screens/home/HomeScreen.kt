@@ -50,20 +50,12 @@ import com.immanlv.trem.domain.model.util.filter
 import com.immanlv.trem.presentation.screens.home.components.HomeTimetableCard
 import com.immanlv.trem.presentation.screens.home.util.summaryProvider
 
-@Composable
-fun HomeScreen(
-    navController: NavController,
-    viewModel: HomeScreenViewModel = hiltViewModel()
-) {
-    val timetable = viewModel.timetable.value
-    HomeScreenView(profile = viewModel.profile.value, timetable)
-
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeScreenView(profile: Profile, timetable: Timetable) {
-
+fun HomeScreen(
+    profile: Profile,
+    timetable: Timetable,
+) {
     var classNotificationSummary by remember {
         mutableStateOf("")
     }
@@ -202,7 +194,7 @@ private fun HomeScreenView(profile: Profile, timetable: Timetable) {
 @Composable
 private fun HomeScreenPreview() {
     Surface(modifier = Modifier.fillMaxSize()) {
-        HomeScreenView(
+        HomeScreen(
             Profile(
                 name = "Immanuel Mundary",
                 regdno = 2101229079

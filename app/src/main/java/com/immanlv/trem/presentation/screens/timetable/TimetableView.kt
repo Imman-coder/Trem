@@ -20,17 +20,7 @@ import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.presentation.screens.timetable.components.TimetableCard
 
 @Composable
-fun TimetableView(
-    navController: NavController,
-    viewModel: TimetableViewModel = hiltViewModel()
-) {
-    val timetable = viewModel.timetable.value
-    TimetableViewP(timetable = timetable)
-}
-
-
-@Composable
-private fun TimetableViewP(timetable: Timetable) {
+fun TimetableView(timetable: Timetable) {
     if (timetable!=Timetable())
         LazyColumn(contentPadding = PaddingValues(16.dp)){
             itemsIndexed(timetable.eventTable[0]){ _, id ->
@@ -46,7 +36,7 @@ private fun TimetableViewP(timetable: Timetable) {
 @Composable
 private fun TimetableViewPreview() {
     Surface(modifier = Modifier.fillMaxSize()) {
-        TimetableViewP(timetable = Timetable(
+        TimetableView(timetable = Timetable(
             eventList = listOf(
                 Event(
                     timeSpan = 1,

@@ -252,6 +252,9 @@ class TimetableBuilderViewModel
                     )
                 }
             }
+
+            TimetableBuilderEvent.Redo -> redo()
+            TimetableBuilderEvent.Undo -> undo()
         }
     }
 

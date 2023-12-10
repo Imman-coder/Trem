@@ -57,20 +57,18 @@ import com.immanlv.trem.presentation.util.Screen
 
 @Composable
 fun ProfileScreen(
-    navController: NavController, viewModel: ProfileScreenViewModel = hiltViewModel()
+    profile: Profile,
+    scorecard: Scorecard,
+    openSettingsPage: () -> Unit,
+    onEvent:(ProfileScreenEvent)->Unit
 ) {
-    val profile = viewModel.profile.value
-    val scorecard = viewModel.scorecard.value
-
-
-
     Column(
         Modifier.verticalScroll(rememberScrollState())
     ) {
         ProfileCard(
             profile = profile,
-            openSettingsPage = {navController.navigate(Screen.SettingsMain.route)},
-            refreshProfilePicture = { viewModel.onEvent(ProfileScreenEvent.RefreshProfile) })
+            openSettingsPage = openSettingsPage,
+            refreshProfilePicture = { onEvent(ProfileScreenEvent.RefreshProfile) })
         ScorecardTable(scorecard = scorecard)
 
     }

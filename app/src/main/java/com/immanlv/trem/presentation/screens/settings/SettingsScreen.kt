@@ -50,7 +50,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.immanlv.trem.domain.model.AppPreference
 import com.immanlv.trem.domain.model.ColorMode
+import com.immanlv.trem.domain.model.Profile
 import com.immanlv.trem.domain.util.DataErrorType
 import com.immanlv.trem.network.util.ImageUtils
 import com.immanlv.trem.presentation.screens.login.util.noRippleClickable
@@ -66,21 +68,24 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    navController: NavController,
-    viewModel: SettingScreenViewModel = hiltViewModel()
+//    navController: NavController,
+//    viewModel: SettingScreenViewModel = hiltViewModel(),
+    profile: Profile,
+    preference: AppPreference,
+    closeSettings:()->Unit,
+    onEvent:(SettingScreenEvent)->Unit
+
 ) {
 
     var clickedTimesDeveloper by remember { mutableIntStateOf(0) }
     var initDeveloperClicks by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    val preference = viewModel.appPreference.value
-    val profile = viewModel.profile.value
 
     var settingModalConfig by remember { mutableStateOf<SettingsModal?>(null) }
 
     if (clickedTimesDeveloper > 9) {
         Toast.makeText(LocalContext.current, "Developer Mode Enabled", Toast.LENGTH_SHORT).show()
-        viewModel.onEvent(SettingScreenEvent.SetPreference(preference.copy(developerMode = true)))
+        onEvent(SettingScreenEvent.SetPreference(preference.copy(developerMode = true)))
         initDeveloperClicks = false
         clickedTimesDeveloper = 0
     }
@@ -130,7 +135,7 @@ fun SettingsScreen(
                     .padding(12.dp)
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Text(text = "Done", Modifier.noRippleClickable { navController.popBackStack() })
+                    Text(text = "Done", Modifier.noRippleClickable { closeSettings() })
                 }
                 Text(
                     text = "Setting",
@@ -180,7 +185,7 @@ fun SettingsScreen(
                             Text(
                                 text = "Logout",
                                 modifier = Modifier.noRippleClickable {
-                                    viewModel.onEvent(
+                                    onEvent(
                                         SettingScreenEvent.Logout
                                     )
                                 },
@@ -209,7 +214,7 @@ fun SettingsScreen(
                         "Permission",
                         preference.showNotification
                     ) {
-                        viewModel.onEvent(
+                        onEvent(
                             SettingScreenEvent.SetPreference(
                                 preference.copy(
                                     showNotification = !preference.showNotification
@@ -232,13 +237,13 @@ fun SettingsScreen(
                         selected = c[s.indexOf(preference.colorMode)],
                         values = c
                     ) {
-                        viewModel.onEvent(SettingScreenEvent.SetPreference(preference.copy(colorMode = s[it])))
+                        onEvent(SettingScreenEvent.SetPreference(preference.copy(colorMode = s[it])))
                     }
                     SettingItemToggleable(
                         title = "Dynamic Colors",
                         enabled = preference.dynamicColor,
                     ) {
-                        viewModel.onEvent(SettingScreenEvent.SetPreference(preference.copy(dynamicColor = it)))
+                        onEvent(SettingScreenEvent.SetPreference(preference.copy(dynamicColor = it)))
                     }
                 }
                 if (preference.developerMode) {
@@ -249,7 +254,7 @@ fun SettingsScreen(
                         )
                     }) {
                         SettingItemToggleable(title = "Developer Option", enabled = true) {
-                            viewModel.onEvent(
+                            onEvent(
                                 SettingScreenEvent.SetPreference(
                                     preference.copy(
                                         developerMode = it
@@ -264,7 +269,7 @@ fun SettingsScreen(
                             settingModalConfig = SettingsModal(
                                 onDismiss = {},
                                 onSuccess = {
-                                    viewModel.onEvent(
+                                    onEvent(
                                         SettingScreenEvent.SetPreference(
                                             preference.copy(
                                                 loadCustomTimetable = it
@@ -280,7 +285,7 @@ fun SettingsScreen(
                             title = "Auto Fetch Last Updated",
                             enabled = preference.autoFetchLastUpdated,
                             onToggle ={
-                                viewModel.onEvent(
+                                onEvent(
                                     SettingScreenEvent.SetPreference(
                                         preference.copy(
                                             autoFetchLastUpdated = it
@@ -317,7 +322,12 @@ data class SettingsModal(
 @Composable
 fun SettingsScreenPreview() {
     TremTheme(darkTheme = true) {
-        SettingsScreen(navController = rememberNavController())
+        SettingsScreen(
+            profile = Profile(),
+            preference = AppPreference(),
+            closeSettings = {},
+            onEvent = {}
+        )
     }
 
 }

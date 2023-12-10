@@ -64,12 +64,12 @@ import java.util.Locale
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Tts(
-    navController: NavController,
-    only: Boolean = false,
-    viewModel: TimetableViewModel = hiltViewModel()
+    timetable:Timetable,
+    timetableState: TimetableState,
+    onEvent:(TimetableScreenEvent)->Unit
 ) {
 
-    val timetable = viewModel.timetable.value
+//    val timetable = viewModel.timetable.value
 
     val context = LocalContext.current
 
@@ -125,7 +125,7 @@ fun Tts(
 
     var isTimetableLoading by remember { mutableStateOf(false) }
 
-    when (viewModel.timetableState.value) {
+    when (timetableState) {
         is TimetableState.Error -> {
             isTimetableLoading = false
         }
@@ -145,7 +145,7 @@ fun Tts(
 
 
     val pullRefreshState = rememberPullRefreshState(refreshing = isTimetableLoading,
-        onRefresh = { viewModel.onEvent(TimetableScreenEvent.RefreshTimetable) })
+        onRefresh = { onEvent(TimetableScreenEvent.RefreshTimetable) })
     Box(Modifier.pullRefresh(pullRefreshState)) {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             if (timetable.error == DataErrorType.NoDataFound) {

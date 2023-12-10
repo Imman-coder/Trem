@@ -47,14 +47,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.immanlv.trem.R
+import com.immanlv.trem.data.model.Credentials
 import com.immanlv.trem.presentation.screens.login.components.FakeLoginDialogBox
 import com.immanlv.trem.presentation.screens.login.util.noRippleClickable
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LoginScreen(
-    navController: NavController, viewModel: LoginViewModel = hiltViewModel()
+    credentials: Credentials,
+    eventFlow: SharedFlow<LoginUiEvent>,
+    onEvent: (LoginEvent)->Unit
 ) {
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
@@ -68,14 +74,14 @@ fun LoginScreen(
 
     isValid = (email.value.length == 10) && (password.value.length in 8..29)
 
-    LaunchedEffect(key1 = viewModel ){
-            email.value = viewModel.credential.uid
-            password.value = viewModel.credential.pass
+    LaunchedEffect(key1 = credentials ){
+            email.value = credentials.uid
+            password.value = credentials.pass
     }
 
 
-    LaunchedEffect(key1 = true, block = {
-        viewModel.eventFlow.collectLatest { event ->
+    LaunchedEffect(key1 = true) {
+        eventFlow.collectLatest{ event ->
             when (event) {
                 is LoginUiEvent.LogInProgress -> {
                     loadingBarMessage = event.message
@@ -83,11 +89,6 @@ fun LoginScreen(
 
                 is LoginUiEvent.LoggedIn -> {
                     loadingBarMessage = null
-//                    navController.navigate(Screen.MainNavGraph.route){
-//                        popUpTo(Screen.AuthNavGraph.route){
-//                            inclusive = true
-//                        }
-//                    }
                 }
 
                 is LoginUiEvent.ShowToast -> {
@@ -96,10 +97,10 @@ fun LoginScreen(
                 }
             }
         }
-    })
+    }
 
     fun login() {
-        viewModel.onEvent(LoginEvent.Login(email.value, password.value, saveCredentials.value))
+        onEvent(LoginEvent.Login(email.value, password.value, saveCredentials.value))
     }
 
     if (!loadingBarMessage.isNullOrBlank()) {
@@ -208,7 +209,7 @@ fun LoginScreen(
             FakeLoginDialogBox(onDismiss = {
                 showFakeLoginDialog = false
             }) { sem, section, branch, batch, program ->
-                viewModel.onEvent(LoginEvent.FakeLogin(sem, section, branch, batch, program))
+                onEvent(LoginEvent.FakeLogin(sem, section, branch, batch, program))
             }
         }
     }
@@ -217,5 +218,9 @@ fun LoginScreen(
 @Preview
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen(navController = rememberNavController())
+    LoginScreen(
+        credentials = Credentials(),
+        eventFlow = MutableSharedFlow(),
+        onEvent = {}
+    )
 }
