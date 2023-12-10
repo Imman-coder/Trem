@@ -21,12 +21,12 @@ class LoginViewModel
 @Inject constructor(
     private val loginUseCases: LoginUseCases,
     private val app: BaseApplication
-):ViewModel(){
+) : ViewModel() {
 
     private val _eventFlow = MutableSharedFlow<LoginUiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
-    lateinit var credential :Credentials
+    lateinit var credential: Credentials
 
     init {
         viewModelScope.launch {
@@ -38,66 +38,71 @@ class LoginViewModel
 
     private var _loginStateObserver: Job? = null
 
-    fun onEvent(event: LoginEvent){
+    fun onEvent(event: LoginEvent) {
+        when (event) {
+            is LoginEvent.Login -> login(event.username, event.password, event.saveCredentials)
+
+            is LoginEvent.FakeLogin -> fakeLogin(
+                event.sem,
+                event.section,
+                event.branch,
+                event.batch,
+                event.program
+            )
+        }
+
+    }
+
+    private fun fakeLogin(sem: Int, section: Char, branch: String, batch: String, program: String) {
         viewModelScope.launch {
-            when(event){
-                is LoginEvent.Login->{
-                    _eventFlow.emit(LoginUiEvent.LogInProgress("Starting up... "))
+            loginUseCases.fakeLogin(
+                Profile(
+                    sem = sem,
+                    section = section,
+                    branch = branch,
+                    batch = batch,
+                    program = program,
+                )
+            )
+            _loginStateObserver?.cancel()
+        }
+    }
 
-                    val state = loginUseCases.login(event.username,event.password,event.saveCredentials)
-                    _loginStateObserver?.cancel()
-                    _loginStateObserver = state.onEach {
-                        when(it){
-                            LoginStatusE.FetchingHash ->{
-                                _eventFlow.emit(LoginUiEvent.LogInProgress("Fetching Hash..."))
-                            }
-                            LoginStatusE.LoggingIn -> {
-                                _eventFlow.emit(LoginUiEvent.LogInProgress("Logging In..."))
-                            }
-                            LoginStatusE.CheckingLoginStatus -> {
-                                _eventFlow.emit(LoginUiEvent.LogInProgress("Checking Login Status..."))
-                            }
-                            LoginStatusE.BindingUp -> {
-                                _eventFlow.emit(LoginUiEvent.LogInProgress("Finishing..."))
-                            }
-                            LoginStatusE.Success -> {
-                                _eventFlow.emit(LoginUiEvent.LoggedIn)
-                                _loginStateObserver?.cancel()
-                            }
-                            is LoginStatusE.Error -> {
-                                _eventFlow.emit(LoginUiEvent.ShowToast(it.error.message.toString()))
-                                _loginStateObserver?.cancel()
-                            }
-                        }
-                    }.launchIn(viewModelScope)
-                }
+    private fun login(username: String, password: String, saveCredentials: Boolean) {
+        viewModelScope.launch {
+            _eventFlow.emit(LoginUiEvent.LogInProgress("Starting up... "))
 
-                is LoginEvent.FakeLogin ->{
-                    val state = loginUseCases.fakeLogin(Profile(
-                        sem = event.sem,
-                        section = event.section,
-                        branch = event.branch,
-                        batch = event.batch,
-                        program = event.program,
-                    ))
-                    _loginStateObserver?.cancel()
-//                    _loginStateObserver = state.onEach {
-//                        when(it){
-//                            is LoginState.Loading -> {
-//                                _eventFlow.emit(LoginUiEvent.LogInProgress(""))
-//                            }
-//                            is LoginState.Success -> {
-//                                _eventFlow.emit(LoginUiEvent.LoggedIn)
-//                                _loginStateObserver?.cancel()
-//                            }
-//                            is LoginState.Error -> {
-//                                _eventFlow.emit(LoginUiEvent.ShowToast(it.error.message.toString()))
-//                                _loginStateObserver?.cancel()
-//                            }
-//                        }
-//                    }.launchIn(viewModelScope)
+            val state = loginUseCases.login(username, password, saveCredentials)
+            _loginStateObserver?.cancel()
+            _loginStateObserver = state.onEach {
+                when (it) {
+                    LoginStatusE.FetchingHash -> {
+                        _eventFlow.emit(LoginUiEvent.LogInProgress("Fetching Hash..."))
+                    }
+
+                    LoginStatusE.LoggingIn -> {
+                        _eventFlow.emit(LoginUiEvent.LogInProgress("Logging In..."))
+                    }
+
+                    LoginStatusE.CheckingLoginStatus -> {
+                        _eventFlow.emit(LoginUiEvent.LogInProgress("Checking Login Status..."))
+                    }
+
+                    LoginStatusE.BindingUp -> {
+                        _eventFlow.emit(LoginUiEvent.LogInProgress("Finishing..."))
+                    }
+
+                    LoginStatusE.Success -> {
+                        _eventFlow.emit(LoginUiEvent.LoggedIn)
+                        _loginStateObserver?.cancel()
+                    }
+
+                    is LoginStatusE.Error -> {
+                        _eventFlow.emit(LoginUiEvent.ShowToast(it.error.message.toString()))
+                        _loginStateObserver?.cancel()
+                    }
                 }
-            }
+            }.launchIn(viewModelScope)
         }
     }
 

@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,8 +40,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.domain.model.Event
 import com.immanlv.trem.domain.model.Profile
@@ -49,6 +47,7 @@ import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.domain.model.util.filter
 import com.immanlv.trem.presentation.screens.home.components.HomeTimetableCard
 import com.immanlv.trem.presentation.screens.home.util.summaryProvider
+import com.immanlv.trem.presentation.screens.timetable.util.shimmerEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,29 +55,31 @@ fun HomeScreen(
     profile: Profile,
     timetable: Timetable,
 ) {
-    var classNotificationSummary by remember {
-        mutableStateOf("")
-    }
-
-    var truncatedUpcomingClasses by remember { mutableStateOf(true) }
-
-    var ongoingClass by remember {
-        mutableStateOf<Event?>(null)
-    }
+    var classNotificationSummary by remember { mutableStateOf("") }
+    var isUpcomingClassTruncated by remember { mutableStateOf(true) }
+    var ongoingClass by remember { mutableStateOf<Event?>(null) }
     var upcomingClass by remember { mutableStateOf<List<Event>>(listOf()) }
 
-    fun updateScreenApi(){
+    var isLoading by remember { mutableStateOf(false) }
+
+    fun updateScreenApi() {
+        if(timetable == Timetable()){
+            isLoading = true
+            return
+        }
+        isLoading = false
+
         ongoingClass = timetable.ongoingClass
-        upcomingClass = timetable.upcomingClasses.filter(listOf(ClassType.Lab,ClassType.Theory))
+        upcomingClass = timetable.upcomingClasses.filter(listOf(ClassType.Lab, ClassType.Theory))
         classNotificationSummary = timetable.summaryProvider()
     }
+    LaunchedEffect(key1 = timetable, block = {
+//        Log.d("TAG", "Timetable: $timetable")
+        updateScreenApi()
+    })
 
-    if (timetable != Timetable())
-        LaunchedEffect(key1 = timetable, block = {
-            Log.d("TAG", "Timetable: $timetable")
-            updateScreenApi()
-        })
 
+    // Update Screen every minute to keep in sync
     DisposableEffect(Unit) {
 
         val intentFilter = IntentFilter().apply {
@@ -107,7 +108,6 @@ fun HomeScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-
         PullToRefreshContainer(state = rememberPullToRefreshState())
         Row {
             Text(buildAnnotatedString {
@@ -131,7 +131,7 @@ fun HomeScreen(
                 )
             }
         }
-        if(upcomingClass.isNotEmpty()) {
+        if (upcomingClass.isNotEmpty()) {
             Column {
                 Text(text = "Upcoming Classes")
                 when (upcomingClass.size) {
@@ -147,7 +147,7 @@ fun HomeScreen(
                     }
 
                     else -> {
-                        if (truncatedUpcomingClasses) {
+                        if (isUpcomingClassTruncated) {
                             HomeTimetableCard(upcomingClass[0])
                             Box(contentAlignment = Alignment.BottomCenter) {
                                 HomeTimetableCard(upcomingClass[1])
@@ -170,7 +170,7 @@ fun HomeScreen(
                                     Text(
                                         "Show more",
                                         modifier = Modifier.clickable {
-                                            truncatedUpcomingClasses = false
+                                            isUpcomingClassTruncated = false
                                         })
                                 }
                             }
@@ -188,15 +188,13 @@ fun HomeScreen(
 }
 
 
-
-
 @Preview
 @Composable
 private fun HomeScreenPreview() {
     Surface(modifier = Modifier.fillMaxSize()) {
         HomeScreen(
             Profile(
-                name = "Immanuel Mundary",
+                name = "",
                 regdno = 2101229079
             ),
             Timetable()

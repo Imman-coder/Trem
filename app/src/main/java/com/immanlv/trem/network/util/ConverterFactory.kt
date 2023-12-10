@@ -127,7 +127,6 @@ class ConverterFactory : Converter.Factory() {
         Log.d("TAG", "getImageData: Fetched data, decoding")
         return Converter { value: ResponseBody ->
             val bytestream = value.byteStream()
-            Log.d("TAG", "getImageData@: $bytestream")
             val stream = ImageUtils.bitmapToBase64(BitmapFactory.decodeStream(bytestream))
             ImageDataResult.Success(stream)
         }
@@ -135,13 +134,12 @@ class ConverterFactory : Converter.Factory() {
 
     private fun getLoginStatus(): Converter<ResponseBody, LoginResult> {
         return Converter { value: ResponseBody ->
-            val m = value.toString()
-            Log.d("TAG", "getLoginStatus: $m")
+            val m = value.string()
             val pattern = Pattern.compile(LoggedInCheckRegex, Pattern.MULTILINE)
             val matcher = pattern.matcher(m)
             if (matcher.find())
-                LoginResult.Success(true)
-            LoginResult.Success(false)
+                return@Converter LoginResult.Success(true)
+            LoginResult.Failed(LoginException("Invalid Credentials",LoginException.Type.InvalidCredentials))
         }
     }
 

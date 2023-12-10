@@ -16,6 +16,7 @@ sealed class TimetableBuilderEvent {
     data object NewTable : TimetableBuilderEvent()
     data object RefreshColorTable : TimetableBuilderEvent()
     data object ToggleTimetableInject : TimetableBuilderEvent()
+    data object InjectTimetable : TimetableBuilderEvent()
     data object Undo : TimetableBuilderEvent()
     data object Redo : TimetableBuilderEvent()
 

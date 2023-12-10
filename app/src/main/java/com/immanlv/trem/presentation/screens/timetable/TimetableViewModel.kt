@@ -30,22 +30,23 @@ class TimetableViewModel @Inject constructor(
 
     private var getTimetableJob : Job? = null
 
+    init {
+        getTimetable()
+    }
+
     fun onEvent(event:TimetableScreenEvent){
         when(event){
-            is TimetableScreenEvent.RefreshTimetable -> {
-                Log.d("TAG", "onEvent: Refresh Timetable")
-                viewModelScope.launch {
-                    _timetableState.value = TimetableState.Loading.Fetching
-                    profileUseCases.refreshTimetable()
-                    _timetableState.value = TimetableState.Loading.Retrieving
-                    _timetableState.value = TimetableState.Idle
-                }
-            }
+            is TimetableScreenEvent.RefreshTimetable -> refreshTimetable()
         }
     }
 
-    init {
-        getTimetable()
+    private fun refreshTimetable(){
+        viewModelScope.launch {
+            _timetableState.value = TimetableState.Loading.Fetching
+            profileUseCases.refreshTimetable()
+            _timetableState.value = TimetableState.Loading.Retrieving
+            _timetableState.value = TimetableState.Idle
+        }
     }
 
     fun getTimetable(){

@@ -40,18 +40,22 @@ class SettingScreenViewModel @Inject constructor(
     }
 
     fun onEvent(event: SettingScreenEvent) {
-        viewModelScope.launch {
-            when (event) {
-                is SettingScreenEvent.Logout -> {
-                    loginUseCases.logout()
-                }
-
-                is SettingScreenEvent.SetPreference -> {
-                    appPreferencesUseCases.setAppPreference(event.v)
-                }
-            }
+        when (event) {
+            is SettingScreenEvent.Logout -> logout()
+            is SettingScreenEvent.SetPreference -> setPreference(event.v)
         }
+    }
 
+    private fun logout() {
+        viewModelScope.launch {
+            loginUseCases.logout()
+        }
+    }
+
+    private fun setPreference(pref: AppPreference) {
+        viewModelScope.launch {
+            appPreferencesUseCases.setAppPreference(pref)
+        }
     }
 
 

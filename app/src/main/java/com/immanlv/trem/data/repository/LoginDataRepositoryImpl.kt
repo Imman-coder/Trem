@@ -21,7 +21,6 @@ import javax.inject.Inject
 class LoginDataRepositoryImpl
 @Inject constructor(
     private val networkRequests: NetworkRequests,
-    private val cookieServer: CookieServer,
     private val profileDao: ProfileDao,
     private val datastoreManager: DatastoreManager,
     private val app: BaseApplication

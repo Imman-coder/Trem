@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,28 +31,28 @@ import com.immanlv.trem.presentation.screens.attendance.components.AttendanceCar
 @Composable
 fun AttendanceView(
     attendance: Attendance,
-    attendanceState:AttendanceState,
+    attendanceUiState:AttendanceUiState,
     onEvent:(AttendanceViewEvent)->Unit
 ) {
     var isRefreshing by remember { mutableStateOf(false) }
 
-    when (attendanceState) {
-        is AttendanceState.Idle -> {
+    when (attendanceUiState) {
+        is AttendanceUiState.Idle -> {
             isRefreshing = false
 
         }
 
-        is AttendanceState.Loading.Fetching -> {
+        is AttendanceUiState.Loading.Fetching -> {
             isRefreshing = true
         }
 
-        is AttendanceState.Loading.Retrieving -> {
+        is AttendanceUiState.Loading.Retrieving -> {
             Toast.makeText(LocalContext.current, "Attendance Sheet Refreshed!", Toast.LENGTH_SHORT)
                 .show()
             isRefreshing = false
         }
 
-        is AttendanceState.Error -> {
+        is AttendanceUiState.Error -> {
             isRefreshing = false
 
         }

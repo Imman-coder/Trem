@@ -38,18 +38,22 @@ class ProfileScreenViewModel @Inject constructor(
 
     fun onEvent(event: ProfileScreenEvent) {
         when (event) {
-            ProfileScreenEvent.RefreshProfile -> {
-                Log.d("TAG", "onEvent: Refresh")
-                viewModelScope.launch {
-                    profileUseCases.refreshProfile()
-                }
-            }
+            ProfileScreenEvent.RefreshProfile -> refreshProfile()
 
-            ProfileScreenEvent.RefreshScorecard -> {
-                TODO()
-            }
+            ProfileScreenEvent.RefreshScorecard -> refreshScorecard()
         }
 
+    }
+
+    private fun refreshProfile() {
+        viewModelScope.launch {
+            profileUseCases.refreshProfile()
+        }
+    }
+    private fun refreshScorecard() {
+        viewModelScope.launch {
+            profileUseCases.refreshScorecard()
+        }
     }
 
     private fun getProfile() {

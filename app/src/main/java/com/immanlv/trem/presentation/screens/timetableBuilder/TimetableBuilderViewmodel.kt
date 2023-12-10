@@ -34,10 +34,8 @@ class TimetableBuilderViewModel
 
     private var _appPreference = mutableStateOf(AppPreference())
 
-
     private var _timetable = mutableStateOf(Timetable())
     val timetable: State<Timetable> = _timetable
-
 
     private var _undoRedoStack = mutableStateOf(Pair(0, 0))
     val undoRedoStack: State<Pair<Int, Int>> = _undoRedoStack
@@ -45,228 +43,149 @@ class TimetableBuilderViewModel
     private var _isTableInjected = mutableStateOf(false)
     val isTableInjected: State<Boolean> = _isTableInjected
 
+    val isSafeToExit: Boolean
+        get() = calculateSafeToExit()
+
 
     init {
         populateColorPalette()
-
-        viewModelScope.launch {
-            appPreferencesUseCases.getAppPreference().onEach {
-                _appPreference.value = it
-            }.launchIn(viewModelScope)
-        }
-    }
-
-    private fun setTimetable(timetable: Timetable) {
-        _timetable.value = timetable
-        if (_isTableInjected.value)
-            viewModelScope.launch {
-                appPreferencesUseCases.setAppPreference(
-                    _appPreference.value.copy(
-                        loadBuilderTimetable = Gson().toJson(timetable)
-                    )
-                )
-            }
+        getAppPreference()
     }
 
 
     fun onEvent(event: TimetableBuilderEvent) {
         when (event) {
-            is TimetableBuilderEvent.AddTime -> {
-                // Record Timelist State
-                recordChangeState(TimeList)
+            is TimetableBuilderEvent.AddTime -> addTimeStamp(event.time)
 
-                // Adding new timestamp
-                setTimetable(
-                    _timetable.value.copy(
-                        timeList = _timetable.value.timeList.toMutableList()
-                            .apply { add(event.time) }.sorted()
+            is TimetableBuilderEvent.AddBlankEvent -> addNewEvent(event.row)
 
-                    )
-                )
-            }
+            is TimetableBuilderEvent.CopyEvent -> copyEvent(event.from, event.to)
 
-            is TimetableBuilderEvent.AddBlankEvent -> {
-                //
-                recordChangeState(Minitial)
+            is TimetableBuilderEvent.DeleteEvent -> deleteEvent(event.from)
 
-                //
-                val id = _timetable.value.eventList.size + 1
-                val eventL = _timetable.value.eventList.toMutableList().apply {
-                    add(
-                        Event(
-                            timeSpan = 1,
-                            subjects = listOf(Subject("", "", "")),
-                            classType = ClassType.Theory
-                        )
-                    )
-                }
+            is TimetableBuilderEvent.EditEvent -> editEvent(event.id, event.data)
 
-                //
-                val eventTable =
-                    _timetable.value.eventTable[event.row].toMutableList().apply { add(id) }
-                val editedTable =
-                    _timetable.value.eventTable.toMutableList().apply { removeAt(event.row) }
-                        .apply { add(event.row, eventTable) }
+            is TimetableBuilderEvent.PasteEventId -> pasteEventId(event.id, event.to)
 
+            is TimetableBuilderEvent.RemoveTime -> removeTimeStamp(event.index)
 
-                setTimetable(
-                    _timetable.value.copy(
-                        eventTable = editedTable,
-                        eventList = eventL
-                    )
-                )
-            }
+            is TimetableBuilderEvent.EditTime -> editTimeStamp(event.index, event.time)
 
-            is TimetableBuilderEvent.CopyEvent -> {
+            is TimetableBuilderEvent.LoadJson -> loadStringJson(event.data)
 
-                //
-                recordChangeState(EventTable)
+            is TimetableBuilderEvent.MoveEvent -> moveEvent(event.from, event.to)
 
-                //
-                val id = _timetable.value.eventTable[event.from.first][event.from.second]
-                pasteEventIdTo(id, event.to)
-            }
+            TimetableBuilderEvent.NewTable -> newTable()
 
-            is TimetableBuilderEvent.DeleteEvent -> {
+            TimetableBuilderEvent.RefreshColorTable -> populateColorPalette()
 
-                //
-                recordChangeState(EventTable)
+            TimetableBuilderEvent.ToggleTimetableInject -> toggleTimetableInjection()
 
-                //
-                val dayList = _timetable.value.eventTable[event.from.first].toMutableList()
-                    .apply { removeAt(event.from.second) }
-
-                val editedTable =
-                    _timetable.value.eventTable.toMutableList()
-                        .apply { removeAt(event.from.first) }
-                        .apply { add(event.from.first, dayList) }
-                setTimetable(
-                    _timetable.value.copy(
-                        eventTable = editedTable
-                    )
-                )
-            }
-
-            is TimetableBuilderEvent.EditEvent -> {
-
-                // Record Separately for this event
-                // recordChangeState(EventList)
-
-                //
-                val e = _timetable.value.eventList.toMutableList().apply { removeAt(event.id) }
-                    .apply { add(event.id, event.data) }
-                setTimetable(
-                    _timetable.value.copy(
-                        eventList = e
-                    )
-                )
-            }
-
-            is TimetableBuilderEvent.PasteEventId -> {
-
-                //
-                recordChangeState(EventTable)
-
-                //
-                pasteEventIdTo(event.id, event.to)
-            }
-
-            is TimetableBuilderEvent.RemoveTime -> {
-
-                //
-                recordChangeState(TimeList)
-
-                //
-                setTimetable(
-                    _timetable.value.copy(
-                        timeList = _timetable.value.timeList.toMutableList()
-                            .apply { removeAt(event.index) })
-                )
-            }
-
-            is TimetableBuilderEvent.EditTime -> {
-
-                //
-                recordChangeState(TimeList)
-
-                //
-                setTimetable(_timetable.value.copy(
-                    timeList = _timetable.value.timeList.toMutableList()
-                        .apply { removeAt(event.index) }.apply { add(event.index, event.time) }
-                        .sorted()
-                ))
-            }
-
-            is TimetableBuilderEvent.LoadJson -> {
-                val v = TimetableMapper.mapToDomainModel(
-                    Gson().fromJson(
-                        event.data,
-                        TimetableDto::class.java
-                    )
-                )
-                setTimetable(v)
-            }
-
-            TimetableBuilderEvent.NewTable -> {
-                setTimetable(Timetable())
-                redoStack.clear()
-                undoStack.clear()
-            }
-
-            is TimetableBuilderEvent.MoveEvent -> {
-
-                //
-                recordChangeState(EventTable)
-
-                //
-                val id = _timetable.value.eventTable[event.from.first][event.from.second]
-                pasteEventIdTo(id, event.to)
-
-                val dayList = _timetable.value.eventTable[event.from.first].toMutableList()
-                    .apply { removeAt(event.from.second) }
-
-                val editedTable =
-                    _timetable.value.eventTable.toMutableList()
-                        .apply { removeAt(event.from.first) }
-                        .apply { add(event.from.first, dayList) }
-                setTimetable(
-                    _timetable.value.copy(
-                        eventTable = editedTable
-                    )
-                )
-            }
-
-            TimetableBuilderEvent.RefreshColorTable -> {
-                populateColorPalette()
-            }
-
-            TimetableBuilderEvent.ToggleTimetableInject -> {
-                _isTableInjected.value = !_isTableInjected.value
-                viewModelScope.launch {
-                    appPreferencesUseCases.setAppPreference(
-                        _appPreference.value.copy(
-                            loadBuilderTimetable = if (!_isTableInjected.value) "" else Gson().toJson(
-                                _timetable.value
-                            )
-                        )
-                    )
-                }
-            }
+            TimetableBuilderEvent.InjectTimetable -> injectTimetable()
 
             TimetableBuilderEvent.Redo -> redo()
+
             TimetableBuilderEvent.Undo -> undo()
         }
     }
 
-    fun getTimetableAsBytes(): ByteArray {
 
-        val v = Gson().toJson(TimetableMapper.mapFromDomainModel(_timetable.value))
+    /*-------------------Event Time functions-------------------*/
+    private fun addTimeStamp(time: Int) {
+        // Record Timestamp State
+        recordChangeState(TimeList)
 
-        return v.toByteArray(Charsets.UTF_8)
+        // Adding new timestamp
+        _timetable.value = _timetable.value.copy(
+            timeList = _timetable.value.timeList.toMutableList()
+                .apply { add(time) }.sorted()
+
+        )
+
+    }
+
+    private fun removeTimeStamp(index: Int) {
+
+        // Record Timestamp state
+        recordChangeState(TimeList)
+
+        // Removing timestamp
+        _timetable.value = _timetable.value.copy(
+            timeList = _timetable.value.timeList.toMutableList()
+                .apply { removeAt(index) })
+
+    }
+
+    private fun editTimeStamp(index: Int, time: Int) {
+
+        // Record Timestamp state
+        recordChangeState(TimeList)
+
+        // Removing and Adding timestamp
+        _timetable.value = _timetable.value.copy(
+            timeList = _timetable.value.timeList.toMutableList()
+                .apply { removeAt(index) }.apply { add(index, time) }
+                .sorted()
+        )
     }
 
 
-    private fun pasteEventIdTo(id: Int, to: Pair<Int, Int>) {
+    /*-------------------Event Table functions-------------------*/
+    private fun deleteEvent(from: Pair<Int, Int>) {
+
+        // Record Event Table State
+        recordChangeState(EventTable)
+
+        // 
+        val dayList = _timetable.value.eventTable[from.first].toMutableList()
+            .apply { removeAt(from.second) }
+        val editedTable =
+            _timetable.value.eventTable.toMutableList()
+                .apply { removeAt(from.first) }
+                .apply { add(from.first, dayList) }
+
+        // Applying changes
+        _timetable.value = _timetable.value.copy(
+            eventTable = editedTable
+        )
+
+    }
+
+    private fun editEvent(id: Int, data: Event) {
+
+        // Record Separately for this event
+        // recordChangeState(EventList)
+
+        val e = _timetable.value.eventList.toMutableList().apply { removeAt(id) }
+            .apply { add(id, data) }
+
+        // Applying changes
+        _timetable.value = _timetable.value.copy(
+            eventList = e
+        )
+
+    }
+
+    private fun pasteEventId(id: Int, to: Pair<Int, Int>) {
+
+        // Record Event Table State
+        recordChangeState(EventTable)
+
+        pasteEventIdWithoutStateRecord(id, to)
+    }
+
+    private fun copyEvent(from: Pair<Int, Int>, to: Pair<Int, Int>) {
+
+        // Record Event Table State
+        recordChangeState(EventTable)
+
+        //
+        val id = _timetable.value.eventTable[from.first][from.second]
+        pasteEventIdWithoutStateRecord(id, to)
+    }
+
+    private fun pasteEventIdWithoutStateRecord(id: Int, to: Pair<Int, Int>) {
+
         val dayList: List<Int> = try {
             _timetable.value.eventTable[to.first].toMutableList()
                 .apply { add(to.second, id) }
@@ -278,13 +197,91 @@ class TimetableBuilderViewModel
             _timetable.value.eventTable.toMutableList()
                 .apply { removeAt(to.first) }
                 .apply { add(to.first, dayList) }
-        setTimetable(
-            _timetable.value.copy(
-                eventTable = editedTable
-            )
+
+        // Applying changes
+        _timetable.value = _timetable.value.copy(
+            eventTable = editedTable
         )
+
     }
 
+    private fun moveEvent(from: Pair<Int, Int>, to: Pair<Int, Int>) {
+
+        // Record Event Table State
+        recordChangeState(EventTable)
+
+        //
+        val id = _timetable.value.eventTable[from.first][from.second]
+        pasteEventIdWithoutStateRecord(id, to)
+
+        val dayList = _timetable.value.eventTable[from.first].toMutableList()
+            .apply { removeAt(from.second) }
+
+        val editedTable =
+            _timetable.value.eventTable.toMutableList()
+                .apply { removeAt(from.first) }
+                .apply { add(from.first, dayList) }
+
+        // Applying changes
+        _timetable.value = _timetable.value.copy(
+            eventTable = editedTable
+        )
+
+    }
+
+
+    /*-------------------Event List functions-------------------*/
+    private fun addNewEvent(row: Int) {
+        // Record Event Table and Event List
+        recordChangeState(Minitial)
+
+        //
+        val newId = _timetable.value.eventList.size + 1
+        val eventListWithNewBlankEvent = _timetable.value.eventList.toMutableList().apply {
+            add(
+                Event(
+                    timeSpan = 1,
+                    subjects = listOf(Subject("", "", "")),
+                    classType = ClassType.Theory
+                )
+            )
+        }
+
+        //
+        val newEventAddedDayList =
+            _timetable.value.eventTable[row].toMutableList().apply { add(newId) }
+        val editedTable =
+            _timetable.value.eventTable.toMutableList().apply { removeAt(row) }
+                .apply { add(row, newEventAddedDayList) }
+
+        // Applying changes
+        _timetable.value = _timetable.value.copy(
+            eventTable = editedTable,
+            eventList = eventListWithNewBlankEvent
+        )
+
+    }
+
+
+    /*-------------------Timetable functions-------------------*/
+    private fun loadStringJson(stringJson: String) {
+        val parsedTable = TimetableMapper.mapToDomainModel(
+            Gson().fromJson(
+                stringJson,
+                TimetableDto::class.java
+            )
+        )
+        _timetable.value = parsedTable
+    }
+
+    private fun newTable() {
+        _timetable.value = Timetable()
+        redoStack.clear()
+        undoStack.clear()
+    }
+
+
+    /*-------------------Misc functions-------------------*/
     private fun populateColorPalette() {
         _colorTable.value = generateColorPalette(
             Color.Unspecified,
@@ -293,12 +290,59 @@ class TimetableBuilderViewModel
         )
     }
 
+    private fun toggleTimetableInjection() {
+        _isTableInjected.value = !_isTableInjected.value
+        viewModelScope.launch {
+            appPreferencesUseCases.setAppPreference(
+                _appPreference.value.copy(
+                    loadBuilderTimetable = if (!_isTableInjected.value) "" else Gson().toJson(
+                        _timetable.value
+                    )
+                )
+            )
+        }
+    }
 
+    fun getTimetableAsBytes(): ByteArray {
+        val timetableAsNetworkParsedJson =
+            Gson().toJson(TimetableMapper.mapFromDomainModel(_timetable.value))
+        return timetableAsNetworkParsedJson.toByteArray(Charsets.UTF_8)
+    }
+
+    private fun getAppPreference() {
+        viewModelScope.launch {
+            appPreferencesUseCases.getAppPreference().onEach {
+                _appPreference.value = it
+            }.launchIn(viewModelScope)
+        }
+    }
+
+    private fun injectTimetable() {
+        viewModelScope.launch {
+            appPreferencesUseCases.setAppPreference(
+                _appPreference.value.copy(
+                    loadBuilderTimetable =
+                    if (_isTableInjected.value)
+                        Gson().toJson(_timetable.value)
+                    else
+                        ""
+                )
+            )
+        }
+    }
+
+    private fun calculateSafeToExit():Boolean{
+        return _appPreference.value.loadBuilderTimetable == Gson().toJson(_timetable.value)
+    }
+
+
+    /**
+     ** Redo undo Implementation
+     **/
     private val undoStack = ArrayDeque<TimetableDataState>()
     private val redoStack = ArrayDeque<TimetableDataState>()
 
     private val stackSize = 32
-
 
     private fun updateMoveStackSize() {
         _undoRedoStack.value = Pair(undoStack.size, redoStack.size)
@@ -336,7 +380,7 @@ class TimetableBuilderViewModel
         updateMoveStackSize()
     }
 
-    fun undo(): Boolean {
+    private fun undo(): Boolean {
         return try {
             val state = undoStack.pop()
 
@@ -344,29 +388,26 @@ class TimetableBuilderViewModel
                 when (state) {
                     is TimetableDataState.EventListState -> {
                         recordRedoState(TimetableDataState.EventListState(_timetable.value.eventList))
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventList = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventList = state.data
                         )
+
                     }
 
                     is TimetableDataState.EventTableState -> {
                         recordRedoState(TimetableDataState.EventTableState(_timetable.value.eventTable))
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventTable = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventTable = state.data
                         )
+
                     }
 
                     is TimetableDataState.TimeListState -> {
                         recordRedoState(TimetableDataState.TimeListState(_timetable.value.timeList))
-                        setTimetable(
-                            _timetable.value.copy(
-                                timeList = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            timeList = state.data
                         )
+
                     }
 
                     is TimetableDataState.EventAddState -> {
@@ -376,12 +417,11 @@ class TimetableBuilderViewModel
                                 _timetable.value.eventTable
                             )
                         )
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventList = state.eventList,
-                                eventTable = state.eventTable
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventList = state.eventList,
+                            eventTable = state.eventTable
                         )
+
                     }
                 }
                 true
@@ -392,7 +432,7 @@ class TimetableBuilderViewModel
         }
     }
 
-    fun redo(): Boolean {
+    private fun redo(): Boolean {
         return try {
 
             val state = redoStack.pop()
@@ -401,29 +441,26 @@ class TimetableBuilderViewModel
                 when (state) {
                     is TimetableDataState.EventListState -> {
                         recordRedoState(TimetableDataState.EventListState(_timetable.value.eventList))
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventList = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventList = state.data
                         )
+
                     }
 
                     is TimetableDataState.EventTableState -> {
                         recordRedoState(TimetableDataState.EventTableState(_timetable.value.eventTable))
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventTable = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventTable = state.data
                         )
+
                     }
 
                     is TimetableDataState.TimeListState -> {
                         recordRedoState(TimetableDataState.TimeListState(_timetable.value.timeList))
-                        setTimetable(
-                            _timetable.value.copy(
-                                timeList = state.data
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            timeList = state.data
                         )
+
                     }
 
                     is TimetableDataState.EventAddState -> {
@@ -433,12 +470,11 @@ class TimetableBuilderViewModel
                                 _timetable.value.eventTable
                             )
                         )
-                        setTimetable(
-                            _timetable.value.copy(
-                                eventList = state.eventList,
-                                eventTable = state.eventTable
-                            )
+                        _timetable.value = _timetable.value.copy(
+                            eventList = state.eventList,
+                            eventTable = state.eventTable
                         )
+
                     }
                 }
                 true

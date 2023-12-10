@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.immanlv.trem.domain.model.Event
 
@@ -39,4 +40,10 @@ fun HomeTimetableCard(event: Event? = null) {
         }
 
     }
+}
+
+@Preview
+@Composable
+fun HomeTimetableCardPreview() {
+    HomeTimetableCard()
 }

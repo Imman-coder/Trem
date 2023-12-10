@@ -19,8 +19,8 @@ class AttendanceViewModel
 constructor(
     private val profileUseCases: ProfileUseCases
 ) : ViewModel() {
-    private val _attendanceState = mutableStateOf<AttendanceState>(AttendanceState.Idle)
-    val attendanceState: State<AttendanceState> = _attendanceState
+    private val _attendanceUiState = mutableStateOf<AttendanceUiState>(AttendanceUiState.Idle)
+    val attendanceUiState: State<AttendanceUiState> = _attendanceUiState
 
     private val _attendance = mutableStateOf(Attendance())
     val attendance: State<Attendance> = _attendance
@@ -34,24 +34,26 @@ constructor(
 
     fun onEvent(event: AttendanceViewEvent) {
         when (event) {
-            AttendanceViewEvent.GetAttendanceView -> {
-                getAttendance()
-            }
+            AttendanceViewEvent.GetAttendanceView -> getAttendance()
 
-            AttendanceViewEvent.RefreshAttendanceView -> {
-                viewModelScope.launch {
-                    _attendanceState.value = AttendanceState.Loading.Fetching
-                    profileUseCases.refreshAttendance()
-                    _attendanceState.value = AttendanceState.Loading.Retrieving
-                    _attendanceState.value = AttendanceState.Idle
-                }
-            }
+            AttendanceViewEvent.RefreshAttendanceView -> refreshAttendance()
 
-            is AttendanceViewEvent.RefreshLateUpdated -> {
-                viewModelScope.launch {
-                    profileUseCases.refreshLastUpdated(event.code)
-                }
-            }
+            is AttendanceViewEvent.RefreshLateUpdated -> refreshLastUpdated(event.code)
+        }
+    }
+
+    private fun refreshLastUpdated(code: String) {
+        viewModelScope.launch {
+            profileUseCases.refreshLastUpdated(code)
+        }
+    }
+
+    private fun refreshAttendance() {
+        viewModelScope.launch {
+            _attendanceUiState.value = AttendanceUiState.Loading.Fetching
+            profileUseCases.refreshAttendance()
+            _attendanceUiState.value = AttendanceUiState.Loading.Retrieving
+            _attendanceUiState.value = AttendanceUiState.Idle
         }
     }
 

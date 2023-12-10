@@ -96,7 +96,7 @@ object InterfaceModule {
     @Singleton
     fun provideNetworkRequests(
         networkService: NetworkService,
-        dataService: DataService
+        dataService: DataService,
     ): NetworkRequests = NetworkRequestsImpl(
         _login =  login(networkService),
         _getLoginStatus =  getLoginStatus(networkService),
@@ -123,14 +123,12 @@ object InterfaceModule {
         app: BaseApplication,
         networkRequests: NetworkRequests,
         profileDao: ProfileDao,
-        cookieServer: CookieServer,
         datastoreManager: DatastoreManager
     ): LoginDataRepository =
         LoginDataRepositoryImpl(
             networkRequests = networkRequests,
             profileDao = profileDao,
             app = app,
-            cookieServer = cookieServer,
             datastoreManager = datastoreManager
         )
 
@@ -166,10 +164,10 @@ object InterfaceModule {
 
     @Provides
     @Singleton
-    fun provideLoginUseCase(loginDataRepository: LoginDataRepository,app: BaseApplication): LoginUseCases =
+    fun provideLoginUseCase(loginDataRepository: LoginDataRepository,datastoreManager: DatastoreManager,app: BaseApplication): LoginUseCases =
         LoginUseCases(
             updateLoginStatus = UpdateLoginStatus(loginDataRepository,app),
-            login = Login(loginDataRepository),
+            login = Login(loginDataRepository,datastoreManager),
             fakeLogin = FakeLogin(loginDataRepository),
             logout = Logout(loginDataRepository),
             getCredentials = GetSavedCredentials(loginDataRepository)

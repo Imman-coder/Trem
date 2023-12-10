@@ -123,6 +123,12 @@ object DatastoreModule {
 }
 
 class DatastoreManager(val context: Context) {
+
+    suspend fun resetCookies(){
+        context.cookieStore.updateData {
+            listOf()
+        }
+    }
     suspend fun reset() {
         context.timetableStore.updateData {
             Timetable()
