@@ -3,7 +3,7 @@ package com.immanlv.trem.presentation.screens.attendance.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.immanlv.trem.domain.model.AttendanceSubject
-import com.immanlv.trem.domain.model.SubjectType
+import com.immanlv.trem.domain.model.ClassType
 
 
 @Composable
@@ -27,7 +27,7 @@ fun AttendanceCardPreview() {
             present = 20,
             conducted = 23,
             code = "ETM202",
-            type = SubjectType.LAB,
+            type = ClassType.Lab,
             credit = 3
         )
     ) {

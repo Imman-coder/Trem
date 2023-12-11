@@ -2,7 +2,7 @@ package com.immanlv.trem.network.model.mapper
 
 import com.immanlv.trem.domain.model.Attendance
 import com.immanlv.trem.domain.model.AttendanceSubject
-import com.immanlv.trem.domain.model.SubjectType
+import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.network.model.AttendanceDto
 import com.immanlv.trem.network.util.DomainMapper
 
@@ -38,6 +38,6 @@ fun getCode(name: String): String {
     return words[1].dropLast(1);
 }
 
-fun getClassType(name: String): SubjectType {
-    return if (name.contains("(lab)|(LAB)")) SubjectType.LAB else SubjectType.THEORY
+fun getClassType(name: String): ClassType {
+    return if (name.contains("(lab)|(LAB)")) ClassType.Lab else ClassType.Theory
 }

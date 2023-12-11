@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.immanlv.trem.domain.model.AttendanceSubject
-import com.immanlv.trem.domain.model.SubjectType
+import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.presentation.screens.login.util.noRippleClickable
 
 @Composable
@@ -70,7 +70,7 @@ fun AttendanceCard2V(
                     Row(Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(text = item.name, fontWeight = FontWeight.Medium)
-                        if(item.type == SubjectType.LAB)
+                        if(item.type == ClassType.Lab)
                             Row(modifier = Modifier
 //                                .rotate(90F)
 //                                .offset(y = (-10).dp)
@@ -169,7 +169,7 @@ fun AttendanceCard2(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(text = item.name, fontWeight = FontWeight.Medium)
-                        if (item.type == SubjectType.LAB)
+                        if (item.type == ClassType.Lab)
                             Row(
                                 modifier = Modifier
 //                                .rotate(90F)

@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.immanlv.trem.domain.model.AttendanceSubject
-import com.immanlv.trem.domain.model.SubjectType
+import com.immanlv.trem.domain.model.ClassType
 
 @Composable
 fun AttendanceCard3(
@@ -123,7 +123,7 @@ fun AttendanceCard3Preview() {
             present = 20,
             conducted = 23,
             code = "ETM202",
-            type = SubjectType.LAB,
+            type = ClassType.Lab,
             credit = 3
         )
     ) {

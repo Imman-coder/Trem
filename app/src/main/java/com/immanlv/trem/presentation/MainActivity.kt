@@ -79,9 +79,9 @@ import com.immanlv.trem.presentation.screens.timetable.Tts
 import com.immanlv.trem.presentation.screens.timetableBuilder.TimetableBuilderScreen
 import com.immanlv.trem.presentation.screens.timetableBuilder.TimetableBuilderViewModel
 import com.immanlv.trem.presentation.theme.TremTheme
-import com.immanlv.trem.presentation.util.BottomNavigationItem
-import com.immanlv.trem.presentation.util.FloatingBottomNavigation
-import com.immanlv.trem.presentation.util.FloatingNavigationBarItem
+import com.immanlv.trem.presentation.components.FloatingBottomNavigationItem
+import com.immanlv.trem.presentation.components.FloatingBottomNavigation
+import com.immanlv.trem.presentation.components.FloatingNavigationBarItem
 import com.immanlv.trem.presentation.util.Screen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             } else {
                                 scope.launch {
+                                    viewModel.onEvent(MainViewEvent.HandleLogout)
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(Screen.MainNavGraph.route) {
                                             inclusive = true
@@ -169,7 +170,9 @@ class MainActivity : ComponentActivity() {
                         val currentDestination = currentBackstack.value?.destination
 
                         Scaffold(bottomBar = {
-                            if (currentDestination?.route != Screen.Login.route && currentDestination?.route != Screen.SettingsMain.route) if (!showNavigationRail) {
+                            val hideNavList = listOf(Screen.Login.route, Screen.SettingsMain.route)
+                            val showNavBar = currentDestination?.route !in hideNavList
+                            if (showNavBar) if (!showNavigationRail) {
                                 Box(
                                     Modifier
                                         .padding(vertical = 12.dp)
@@ -227,12 +230,14 @@ class MainActivity : ComponentActivity() {
             navigation(
                 startDestination = Screen.Login.route, route = Screen.AuthNavGraph.route
             ) {
-                composable(Screen.Login.route) {
+                composable(Screen.Login.route,
+                    exitTransition = { fadeOut(tween(1))}
+                ) {
                     val viewModel = it.sharedViewModel<LoginViewModel>(navController)
                     LoginScreen(
                         credentials = viewModel.credential,
                         eventFlow = viewModel.eventFlow,
-                        onEvent = viewModel::onEvent
+                        onEvent = viewModel::onEvent,
                     )
                 }
             }
@@ -250,7 +255,7 @@ class MainActivity : ComponentActivity() {
                     val viewModel = it.sharedViewModel<TimetableViewModel>(navController)
                     Tts(
                         timetable = viewModel.timetable.value,
-                        timetableState = viewModel.timetableState.value,
+                        timetableScreenState = viewModel.timetableScreenState.value,
                         onEvent = viewModel::onEvent
                     )
                 }
@@ -304,18 +309,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun bottomNavigationItems(): List<BottomNavigationItem> {
+fun bottomNavigationItems(): List<FloatingBottomNavigationItem> {
     return listOf(
-        BottomNavigationItem(
+        FloatingBottomNavigationItem(
             label = "Home", icon = Icons.Outlined.Home, route = Screen.Home.route
         ),
-        BottomNavigationItem(
+        FloatingBottomNavigationItem(
             label = "Timetable", icon = Icons.Outlined.TableChart, route = Screen.Timetable.route
         ),
-        BottomNavigationItem(
+        FloatingBottomNavigationItem(
             label = "Attendance", icon = Icons.Outlined.Badge, route = Screen.Attendance.route
         ),
-        BottomNavigationItem(
+        FloatingBottomNavigationItem(
             label = "Profile", icon = Icons.Outlined.AccountCircle, route = Screen.Profile.route
         ),
     )

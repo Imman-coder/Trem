@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.immanlv.trem.domain.model.Attendance
 import com.immanlv.trem.domain.model.AttendanceSubject
-import com.immanlv.trem.domain.model.SubjectType
+import com.immanlv.trem.domain.model.ClassType
 import com.immanlv.trem.presentation.screens.attendance.components.AttendanceCard2
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -107,7 +107,7 @@ private fun AttendanceViewColumnPreview() {
                     present = 10,
                     conducted = 14,
                     code = "ETM202",
-                    type = SubjectType.THEORY,
+                    type = ClassType.Theory,
                     credit = 3
                 ),
                 AttendanceSubject(
@@ -116,7 +116,7 @@ private fun AttendanceViewColumnPreview() {
                     present = 20,
                     conducted = 23,
                     code = "ETM505",
-                    type = SubjectType.THEORY,
+                    type = ClassType.Theory,
                     credit = 1
                 ),
                 AttendanceSubject(
@@ -125,7 +125,7 @@ private fun AttendanceViewColumnPreview() {
                     present = 13,
                     conducted = 23,
                     code = "ETM221",
-                    type = SubjectType.LAB,
+                    type = ClassType.Lab,
                     credit = 2
                 )
             )

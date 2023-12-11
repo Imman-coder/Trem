@@ -122,14 +122,19 @@ data class Timetable(
         return false
     }
 
-    fun getSummaryOfClass(code: String): TimetableStat {
+    fun getSummaryOfClass(code: String): TimetableStat? {
         var eventId = 0
         var weeklyClasses = 0
         val classesOnDay = mutableListOf<Int>()
 
 
         eventList.forEachIndexed { index, it ->
-            if (it.subjects[0].subjectCode == code) eventId = index + 1
+            try {
+                if (it.subjects[0].subjectCode == code) eventId = index + 1
+            } catch (_:Exception) {
+                return null
+            }
+
         }
 
         eventTable.forEachIndexed { id, it ->

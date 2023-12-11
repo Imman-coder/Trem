@@ -1,8 +1,7 @@
-package com.immanlv.trem.presentation.util
+package com.immanlv.trem.presentation.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.TableChart
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.immanlv.trem.presentation.bottomNavigationItems
 
 @Composable
 fun FloatingBottomNavigation(
@@ -54,48 +55,6 @@ fun FloatingBottomNavigation(
                 content()
             }
         }
-    }
-
-}
-
-@Preview
-@Composable
-fun FloatingBottomNavigationPreview() {
-    val navigationSelectedItem by remember {
-        mutableIntStateOf(0)
-    }
-    val navigationItems = bottomNavigationItems()
-    FloatingBottomNavigation(
-    ) {
-        bottomNavigationItems().forEachIndexed { id, item ->
-            FloatingNavigationBarItem(
-                selected = navigationSelectedItem == id,
-                onClick = { /*TODO*/ },
-                icon = {
-                    Icon(item.icon, contentDescription = item.label,tint = MaterialTheme.colorScheme.primary)
-                }
-            ) {
-                Text(text = item.label, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun FloatingNavigationBarItemPreview() {
-    Row {
-        FloatingNavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = {
-                Icon(
-                    Icons.Outlined.Home,
-                    contentDescription = "Home",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        ) { Text(text = "Home", color = MaterialTheme.colorScheme.primary) }
     }
 
 }
@@ -125,6 +84,61 @@ fun FloatingNavigationBarItem(
             Spacer(modifier = Modifier.width(6.dp))
         AnimatedVisibility(visible = selected) {
             label()
+        }
+    }
+}
+
+@Preview
+@Composable
+fun FloatingNavigationBarItemPreview() {
+    Row {
+        FloatingNavigationBarItem(
+            selected = false,
+            onClick = {},
+            icon = {
+                Icon(
+                    Icons.Outlined.Home,
+                    contentDescription = "Home",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        ) { Text(text = "Home", color = MaterialTheme.colorScheme.primary) }
+    }
+
+}
+
+@Preview
+@Composable
+fun FloatingBottomNavigationPreview() {
+    val navigationSelectedItem by remember {
+        mutableIntStateOf(0)
+    }
+    val navigationItems = listOf(
+        FloatingBottomNavigationItem(
+            label = "Home", icon = Icons.Outlined.Home, route = ""
+        ),
+        FloatingBottomNavigationItem(
+            label = "Timetable", icon = Icons.Outlined.TableChart, route = ""
+        ),
+        FloatingBottomNavigationItem(
+            label = "Attendance", icon = Icons.Outlined.Badge, route = ""
+        ),
+        FloatingBottomNavigationItem(
+            label = "Profile", icon = Icons.Outlined.AccountCircle, route = ""
+        ),
+    )
+
+    FloatingBottomNavigation {
+        navigationItems.forEachIndexed { id, item ->
+            FloatingNavigationBarItem(
+                selected = navigationSelectedItem == id,
+                onClick = {  },
+                icon = {
+                    Icon(item.icon, contentDescription = item.label,tint = MaterialTheme.colorScheme.primary)
+                }
+            ) {
+                Text(text = item.label, color = MaterialTheme.colorScheme.primary)
+            }
         }
     }
 }

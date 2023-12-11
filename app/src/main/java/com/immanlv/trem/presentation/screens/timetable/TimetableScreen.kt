@@ -48,30 +48,33 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.immanlv.trem.domain.model.Timetable
 import com.immanlv.trem.domain.util.Constants.WeekList
 import com.immanlv.trem.domain.util.DataErrorType
 import com.immanlv.trem.presentation.screens.login.util.noRippleClickable
+import com.immanlv.trem.presentation.screens.timetable.components.SubjectSummaryCardDialog
 import com.immanlv.trem.presentation.screens.timetable.util.getSystemDayOfWeekInt
-import com.immanlv.trem.screens.timetable.presentation.components.TableListViewer
+import com.immanlv.trem.presentation.screens.timetable.components.TableListViewer
+import com.immanlv.trem.presentation.screens.timetable.util.SubjectSummaryHolder
 import com.immanlv.trem.presentation.screens.timetable.util.getSystemTimeInt
 import com.immanlv.trem.presentation.screens.timetable.util.shimmerEffect
 import com.immanlv.trem.presentation.screens.timetable.util.toPx
+import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 import java.util.Locale
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Tts(
-    timetable:Timetable,
-    timetableState: TimetableState,
-    onEvent:(TimetableScreenEvent)->Unit
+    timetable: Timetable,
+    timetableScreenState: TimetableScreenState,
+    onEvent: (TimetableScreenEvent) -> Unit
 ) {
 
-//    val timetable = viewModel.timetable.value
-
     val context = LocalContext.current
+    val dialogState = rememberMaterialDialogState()
+    var subjectSummaryHolder by remember {
+        mutableStateOf<SubjectSummaryHolder?>(null)
+    }
 
     var currentTime by remember { mutableIntStateOf(0) }
     var selectedDay by remember { mutableIntStateOf(-1) }
@@ -125,7 +128,7 @@ fun Tts(
 
     var isTimetableLoading by remember { mutableStateOf(false) }
 
-    when (timetableState) {
+    when (timetableScreenState.timetableState) {
         is TimetableState.Error -> {
             isTimetableLoading = false
         }
@@ -143,9 +146,26 @@ fun Tts(
         }
     }
 
+    when (timetableScreenState.classCardState) {
+        ClassCardState.Idle -> {
+            subjectSummaryHolder = null
+            dialogState.hide()
+        }
+
+        is ClassCardState.ShowClassDetailCardState -> {
+            subjectSummaryHolder = timetableScreenState.classCardState.data
+            dialogState.show()
+        }
+    }
+
 
     val pullRefreshState = rememberPullRefreshState(refreshing = isTimetableLoading,
         onRefresh = { onEvent(TimetableScreenEvent.RefreshTimetable) })
+
+    subjectSummaryHolder?.let {
+        SubjectSummaryCardDialog(dialogState, it) { onEvent(TimetableScreenEvent.HideClassCard) }
+    }
+
     Box(Modifier.pullRefresh(pullRefreshState)) {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             if (timetable.error == DataErrorType.NoDataFound) {
@@ -164,10 +184,10 @@ fun Tts(
                     Column(
                         Modifier.fillMaxWidth(cSize)
                     ) {
-                        if (timetable != Timetable() && (selectedDay > -1) && (selectedDay < 7)) {
+                        if (timetable != Timetable() && (selectedDay in 0..6)) {
                             println(timetable)
                             TableListViewer(
-                                timetable, selectedDay, currentTime
+                                timetable, selectedDay, currentTime, onEvent
                             )
                         } else {
                             LazyColumn(
@@ -281,14 +301,11 @@ fun Tts(
                     }
                 }
             }
-
         }
         PullRefreshIndicator(
             refreshing = isTimetableLoading,
             pullRefreshState,
             Modifier.align(Alignment.TopCenter)
         )
-
-
     }
 }

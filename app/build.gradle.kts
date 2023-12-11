@@ -121,7 +121,7 @@ dependencies {
     implementation("org.jsoup:jsoup:1.14.3")
 
 
-//     Splashscreen dependency
+    // Splashscreen dependency
     implementation("androidx.core:core-splashscreen:1.0.1")
 
 

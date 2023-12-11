@@ -1,4 +1,4 @@
-package com.immanlv.trem.screens.timetable.presentation.components
+package com.immanlv.trem.presentation.screens.timetable.components
 
 import android.util.Log
 import androidx.compose.foundation.Canvas
@@ -26,7 +26,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.immanlv.trem.domain.model.Timetable
-import com.immanlv.trem.presentation.screens.timetable.components.TimetableCard2
+import com.immanlv.trem.presentation.screens.timetable.TimetableScreenEvent
 import com.immanlv.trem.presentation.screens.timetable.util.getCurrentTimeIndexFromTime
 import com.immanlv.trem.presentation.screens.timetable.util.intToTime
 import com.immanlv.trem.presentation.screens.timetable.util.pxToDp
@@ -35,8 +35,9 @@ import com.immanlv.trem.presentation.screens.timetable.util.pxToDp
 @Composable
 fun TableListViewer(
     timetable: Timetable,
-    week:Int,
-    currentTime: Int
+    week: Int,
+    currentTime: Int,
+    onEvent: (TimetableScreenEvent) -> Unit
 ) {
     Log.d("TAG", "TableStarted")
 
@@ -52,7 +53,7 @@ fun TableListViewer(
     val cardHeight = 60.dp
     val cardGap = 10.dp
     val circleRadius = 24f
-    val gapbetween = cardHeight + cardGap
+    val gapBetween = cardHeight + cardGap
     val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 5f), 0F)
     val textMeasure = rememberTextMeasurer()
     val textStyle =
@@ -64,7 +65,7 @@ fun TableListViewer(
     }
 
     val totalContentHeight = remember {
-        mutableStateOf(gapbetween * (timeList.size))
+        mutableStateOf(gapBetween * (timeList.size))
     }
     val dowelColor = MaterialTheme.colorScheme.onSurface
 
@@ -113,7 +114,7 @@ fun TableListViewer(
                     text = intToTime(timeList[x]),
                     topLeft = Offset(
                         0f,
-                        gapbetween.toPx() * x + (allTopPadding.toPx() * .4f)
+                        gapBetween.toPx() * x + (allTopPadding.toPx() * .4f)
                     ),
                     style = textStyle
                 )
@@ -130,7 +131,15 @@ fun TableListViewer(
             for (x in eventLine) {
                 TimetableCard2(
                     Modifier
-                        .clickable { Log.d("TAG", "touched..") },
+                        .clickable {
+                            eventList[x - 1].subjects[0].subjectCode.let {
+                                if (it.isNotEmpty()) onEvent(
+                                    TimetableScreenEvent.ShowClassCard(it)
+                                )
+                            }
+
+                            Log.d("TAG", "touched..")
+                        },
                     eventList[x - 1],
                     ln,
                     timeList
